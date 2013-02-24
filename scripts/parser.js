@@ -16,17 +16,16 @@ function parseProgram() {
 }
 
 function parseStatement() {
-    var next = peekNextToken();
-    if (next.type == "pOpen") {
+    if (currentToken.type == "pOpen") {
         parsePrint();
     }
-    else if (next.type == "id") {
+    else if (currentToken.type == "id") {
         parseIDAssign();
     }
-    else if (next.type == "type") {
+    else if (currentToken.type == "type") {
         parseVarDecleration();
     }
-    else if (next.type == "bOpen") {
+    else if (currentToken.type == "bOpen") {
         parseStatementList();
         checkToken("bClose");
     }
@@ -45,7 +44,7 @@ function parseIDAssign() {
 }
 
 function parseStatementList() {
-    if (peekNextToken().type == "bClose") {
+    if (currentToken.type == "bClose") {
         //End of the statement list
     }
     else {
@@ -55,21 +54,20 @@ function parseStatementList() {
 }
 
 function parseExpression() {
-    var next = peekNextToken();
-    if (next.type == "digit") {
+    if (currentToken.type == "digit") {
         parseIntExpression();
     }
-    if (next.type == "qOpen") {
+    if (currentToken.type == "qOpen") {
         parseCharExpression();
     }
-    if (next.type == "id") {
+    if (currentToken.type == "id") {
         checkToken("id");
     }
 }
 
 function parseIntExpression() {
     checkToken("digit");
-    if (peekNextToken().type == "op") {
+    if (currentToken.type == "op") {
         checkToken("op");
         parseExpression();
     }
@@ -83,19 +81,21 @@ function parseCharExpression() {
 
 function parseCharList() {
     checkToken("char");
-    if (peekNextToken().type == "char") {
+    if (currentToken.type == "char") {
         parseCharList();
     }
 }
 
 function parseVarDeclaration() {
     checkToken("type");
+    var type = tokens[tokenIndex-1].value;
     checkToken("id");
+    symbolTable.push(new Symbol(type, tokens[tokenIndex-1].value));
 }
 
 //-----------------------------------------------------------------------
 
-function peekNextToken() {
+function peekNextToken() { //May not be needed
     var thisToken = EOF;    // Let's assume that we're at the EOF.
     if (tokenIndex < tokens.length) {
         // If we're not at EOF, then return the next token in the stream.
@@ -114,6 +114,17 @@ function consumeNextToken() {
         tokenIndex++;
     }
     return thisToken;
+}
+
+function idIsFree(idValue) { //Not needed I think
+    for(var i=0; i<symbolTable.length; i++)
+    {
+        if(symbolTable[i] == idValue)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -216,6 +227,12 @@ function checkToken(expectedKind) {
     // Consume another token, having just checked this one, because that 
     // will allow the code to see what's coming next... a sort of "look-ahead".
     currentToken = consumeNextToken();
+}
+
+function Symbol(type, id)
+{
+    this.type = type;
+    this.id = id;
 }
 
 

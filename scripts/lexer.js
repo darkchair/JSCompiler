@@ -46,7 +46,8 @@
                     {
                         for(var j=0; j<holdString.length; j++)
                         {
-                            if(ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) <= 90)
+                            if(holdString.charAt(j).charCodeAt(0) >= 65 &&
+                                holdString.charAt(j).charCodeAt(0) <= 90)
                             {//No upper case allowed
                                 errorCount++;
                                 putMessage("Id's must be lower-case");
