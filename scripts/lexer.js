@@ -31,37 +31,47 @@
                     holdString += sourceCode.charAt(lexCounter);
                     lexCounter++;
                     returnedToken = new Token("pOpen", holdString);
+                    tokenArray.push(returnedToken);
+                    continue;
                 }
-                else if(holdString.length > 1)
+                else
                 {
                     if(holdString == "int" || holdString == "char")
                     {
                         returnedToken = new Token("type", holdString);
+                        tokenArray.push(returnedToken);
+                        continue;
                     }
                     else
                     {
-                        errorCount++;
-                        putMessage("Id's cannot be longer than one character");
+                        for(var j=0; j<holdString.length; j++)
+                        {
+                            if(ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) <= 90)
+                            {//No upper case allowed
+                                errorCount++;
+                                putMessage("Id's must be lower-case");
+                            }
+                            else
+                            {
+                                tokenArray.push(new Token("char", holdString.charAt(j)));
+                            }
+                        }
+                        continue;
                     }
+                        //errorCount++;
+                        //putMessage("Id's cannot be longer than one character");
                 }
-                else
-                {
-                    if(ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) <= 90)
-                    {//No upper case allowed
-                        errorCount++;
-                        putMessage("Id's must be lower-case");
-                    }
-                    else
-                    {
-                        returnedToken = new Token("id", holdString);
-                    }
-                }
-                tokenArray.push(returnedToken);
-                continue;
+                
             }
             if(isOp(sourceCode.charAt(lexCounter)))
             {
                 tokenArray.push(new Token("op", sourceCode.charAt(lexCounter)));
+                lexCounter++;
+                continue;
+            }
+            if(sourceCode.charAt(lexCounter) == "=")
+            {
+                tokenArray.push(new Token("equal", sourceCode.charAt(lexCounter)));
                 lexCounter++;
                 continue;
             }
@@ -77,13 +87,19 @@
                 lexCounter++;
                 continue;
             }
+            if(sourceCode.charAt(lexCounter) == "\"")
+            {
+                tokenArray.push(new Token("quote", sourceCode.charAt(lexCounter)));
+                lexCounter++;
+                continue;
+            }
             if(sourceCode.charAt(lexCounter) == "}")
             {
                 tokenArray.push(new Token("bClose", sourceCode.charAt(lexCounter)));
                 lexCounter++;
                 continue;
             }
-            if(sourceCode.charAt(lexCounter) == "$")
+            if(sourceCode.charAt(lexCounter) == EOF)
             {
                 tokenArray.push(new Token("end", sourceCode.charAt(lexCounter)));
                 lexCounter++;
@@ -96,7 +112,7 @@
             
         }
         
-        return sourceCode;
+        return tokenArray;
     }
     
     function Token(type, value)
