@@ -7,12 +7,17 @@ function parse() {
     // A valid parse derives the 'program' production, so begin there.
     parseProgram();
     // Report the results.
-    putMessage("Parsing found " + errorCount + " error(s).");
+    putMessage("\nParsing found " + errorCount + " error(s).\n" +
+               "Parsing found " + warningCount + " warning(s).");
 }
 
 function parseProgram() {
     parseStatement();
     checkToken("end");
+    if (tokenIndex < tokens.length) {
+        warningCount++;
+        putMessage("Warning: Tokens found after EndOfFile");
+    }
 }
 
 function parseStatement() {
@@ -20,7 +25,7 @@ function parseStatement() {
         parsePrint();
     }
     else if (currentToken.type == "char" &&
-            peekNextToken().type == "equal") {
+        peekNextToken().type == "equal") {
         parseIDAssign();
     }
     else if (currentToken.type == "type") {
@@ -158,7 +163,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "id": putMessage("Expecting id");
-            if (currentToken.value.charCodeAt(0) >= 65 && currentToken.value.charCodeAt(0) <= 90) {//If its a lower-case letter
+            if (currentToken.value.charCodeAt(0) >= 97 && currentToken.value.charCodeAt(0) <= 122) {//If its a lower-case letter
                 putMessage("Got an id!");
             }
             else {
@@ -167,7 +172,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "char": putMessage("Expecting character");
-            if (currentToken.value.charCodeAt(0) >= 65 && currentToken.value.charCodeAt(0) <= 90) {//If its a lower-case letter
+            if (currentToken.value.charCodeAt(0) >= 97 && currentToken.value.charCodeAt(0) <= 122) {//If its a lower-case letter
                 putMessage("Got a character!");
             }
             else {
@@ -189,7 +194,8 @@ function checkToken(expectedKind) {
                 putMessage("Got an EOF!");
             }
             else {
-                //warning, EOF not found
+                warningCount++;
+                putMessage("Warning: EndOfFile not found at position " + tokenIndex + ".");
             }
             break;
         case "pOpen": putMessage("Expecting print expression");

@@ -27,7 +27,9 @@ h2
     font-style: normal;	
 }
 
-.stuff
+#taOutput
 {
-    
+    position: relative;
+    top: -327px;
+    left: 300px;
 }
