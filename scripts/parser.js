@@ -19,13 +19,15 @@ function parseStatement() {
     if (currentToken.type == "pOpen") {
         parsePrint();
     }
-    else if (currentToken.type == "id") {
+    else if (currentToken.type == "char" &&
+            peekNextToken().type == "equal") {
         parseIDAssign();
     }
     else if (currentToken.type == "type") {
         parseVarDecleration();
     }
     else if (currentToken.type == "bOpen") {
+        checkToken("bOpen");
         parseStatementList();
         checkToken("bClose");
     }
@@ -38,7 +40,7 @@ function parsePrint() {
 }
 
 function parseIDAssign() {
-    checkToken("id");
+    checkToken("char");
     checkToken("equal");
     parseExpression();
 }
@@ -60,8 +62,8 @@ function parseExpression() {
     if (currentToken.type == "qOpen") {
         parseCharExpression();
     }
-    if (currentToken.type == "id") {
-        checkToken("id");
+    if (currentToken.type == "char") {
+        checkToken("char");
     }
 }
 
@@ -89,13 +91,13 @@ function parseCharList() {
 function parseVarDeclaration() {
     checkToken("type");
     var type = tokens[tokenIndex-1].value;
-    checkToken("id");
+    checkToken("char");
     symbolTable.push(new Symbol(type, tokens[tokenIndex-1].value));
 }
 
 //-----------------------------------------------------------------------
 
-function peekNextToken() { //May not be needed
+function peekNextToken() {
     var thisToken = EOF;    // Let's assume that we're at the EOF.
     if (tokenIndex < tokens.length) {
         // If we're not at EOF, then return the next token in the stream.
@@ -133,7 +135,7 @@ function checkToken(expectedKind) {
     // Validate that we have the expected token kind and et the next token.
     switch (expectedKind) {
         case "digit": putMessage("Expecting a digit");
-            if (currentToken.value.charValueAt(0) <= 48 && currentToken.value.charValueAt(0) >= 57) {
+            if (currentToken.value.charCodeAt(0) >= 48 && currentToken.value.charCodeAt(0) <= 57) {
                 putMessage("Got a digit!");
             }
             else {
@@ -151,7 +153,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "id": putMessage("Expecting id");
-            if (currentToken.value.charValueAt(0) <= 65 && currentToken.value.charValueAt(0) >= 90) {//If its a lower-case letter
+            if (currentToken.value.charCodeAt(0) >= 65 && currentToken.value.charCodeAt(0) <= 90) {//If its a lower-case letter
                 putMessage("Got an id!");
             }
             else {
@@ -160,7 +162,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "char": putMessage("Expecting character");
-            if (currentToken.value.charValueAt(0) <= 65 && currentToken.value.charValueAt(0) >= 90) {//If its a lower-case letter
+            if (currentToken.value.charCodeAt(0) >= 65 && currentToken.value.charCodeAt(0) <= 90) {//If its a lower-case letter
                 putMessage("Got a character!");
             }
             else {
@@ -169,7 +171,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "equal": putMessage("Expecting equal sign");
-            if (currentToken.value == "P(") {
+            if (currentToken.value == "=") {
                 putMessage("Got an equal sign!");
             }
             else {
@@ -195,7 +197,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "pClose": putMessage("Expecting close of print expression");
-            if (currentToken.value == "P(") {
+            if (currentToken.value == ")") {
                 putMessage("Got a close of print expression!");
             }
             else {
@@ -204,7 +206,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "bOpen": putMessage("Expecting open bracket");
-            if (currentToken.value == "P(") {
+            if (currentToken.value == "{") {
                 putMessage("Got an open bracket!");
             }
             else {
@@ -213,7 +215,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "bClose": putMessage("Expecting close bracket");
-            if (currentToken.value == "P(") {
+            if (currentToken.value == "}") {
                 putMessage("Got a close bracket!");
             }
             else {

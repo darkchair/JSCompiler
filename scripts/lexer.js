@@ -50,7 +50,7 @@
                                 holdString.charAt(j).charCodeAt(0) <= 90)
                             {//No upper case allowed
                                 errorCount++;
-                                putMessage("Id's must be lower-case");
+                                putMessage("Characters must be lower-case");
                             }
                             else
                             {
