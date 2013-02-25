@@ -48,7 +48,7 @@ op            ::== + | -
     <script type="text/javascript" src="scripts/parser.js"></script>
     <script type="text/javascript">
     // Global variables
-    var tokens = "";
+    var tokens = new Array();
     var tokenIndex = 0;
     var currentToken = new Token();
     var errorCount = 0;
@@ -61,7 +61,7 @@ op            ::== + | -
         // Clear the message box.
         document.getElementById("taOutput").value = "";
         // Set the initial values for our globals.
-        tokens = "";
+        //tokens = new Array();
         tokenIndex = 0;
         currentToken = ' ';
         errorCount = 0;        
@@ -78,7 +78,7 @@ op            ::== + | -
         tokens = lex();
         if(errorCount == 0)
         {
-            putMessage("Lex returned [" + tokens + "]");
+            putMessage("Lex returned [" + printTokens(tokens) + "]");
             // . . . and parse!
             parse();
         }
@@ -93,6 +93,15 @@ op            ::== + | -
         document.getElementById("taOutput").value += msg + "\n";
     }
     
+    function printTokens(tokens)
+    {
+        var tempStr = "";
+        for(var i=0; i<tokens.length; i++)
+        {
+            tempStr += "[" + tokens[i].type + " , " + tokens[i].value + "]";
+        }
+        return tempStr;
+    }
     
     
     </script>

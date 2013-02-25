@@ -1,7 +1,7 @@
 /* parser.js */
 
 function parse() {
-    putMessage("Parsing [" + tokens + "]");
+    putMessage("Parsing ...");
     // Grab the next token.
     currentToken = consumeNextToken();
     // A valid parse derives the 'program' production, so begin there.
@@ -102,7 +102,7 @@ function peekNextToken() {
     if (tokenIndex < tokens.length) {
         // If we're not at EOF, then return the next token in the stream.
         thisToken = tokens[tokenIndex];
-        putMessage("Next token:" + thisToken);
+        putMessage("Next token:" + printToken(thisToken));
     }
     return thisToken;
 } 
@@ -112,7 +112,7 @@ function consumeNextToken() {
     if (tokenIndex < tokens.length) {
         // If we're not at EOF, then return the next token in the stream and advance the index.
         thisToken = tokens[tokenIndex];
-        putMessage("Current token:" + thisToken);
+        putMessage("Current token:" + printToken(thisToken));
         tokenIndex++;
     }
     return thisToken;
@@ -127,6 +127,11 @@ function idIsFree(idValue) { //Not needed I think
         }
     }
     return true;
+}
+
+function printToken(token)
+{
+    return "[" + token.type + " , " + token.value + "]";
 }
 
 
