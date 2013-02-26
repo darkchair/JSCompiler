@@ -1,188 +1,201 @@
 /* lexer.js  */
 
-    var lexCounter = 0;
+var lexCounter = 0;
 
-    function lex()
+function lex()
+{
+    var tokenArray = new Array();
+
+    // Grab the "raw" source code.
+    var sourceCode = document.getElementById("taSourceCode").value;
+    // Trim the leading and trailing spaces.
+    sourceCode = trim(sourceCode);
+    // TODO: remove all spaces in the middle; remove line breaks too.
+    sourceCode = sourceCode.replace(/\n/g, "");
+    //sourceCode = sourceCode.replace(/\s/g, "");
+
+    for(; lexCounter<sourceCode.length;) 
     {
-        var tokenArray = new Array();
-        
-        // Grab the "raw" source code.
-        var sourceCode = document.getElementById("taSourceCode").value;
-        // Trim the leading and trailing spaces.
-        sourceCode = trim(sourceCode);
-        // TODO: remove all spaces in the middle; remove line breaks too.
-        sourceCode = sourceCode.replace(/\n/g, "");
-        sourceCode = sourceCode.replace(/\s/g, "");
-        
-        for(; lexCounter<sourceCode.length;) 
+        if(isSpace(sourceCode.charAt(lexCounter)))
         {
-            
-            if(isDigit(sourceCode.charAt(lexCounter)))
+            lexCounter++;
+            continue;
+        }
+        if(isDigit(sourceCode.charAt(lexCounter)))
+        {
+            tokenArray.push(evaluateDigit(sourceCode));
+            continue;
+        }
+        if(isChar(sourceCode.charAt(lexCounter)))
+        {
+            var holdString = evaluateChar(sourceCode);
+            var returnedToken;
+            if(holdString == "P" && sourceCode.charAt(lexCounter) == "(")
             {
-                tokenArray.push(evaluateDigit(sourceCode));
+                holdString += sourceCode.charAt(lexCounter);
+                lexCounter++;
+                returnedToken = new Token("pOpen", holdString);
+                tokenArray.push(returnedToken);
                 continue;
             }
-            if(isChar(sourceCode.charAt(lexCounter)))
+            else
             {
-                var holdString = evaluateChar(sourceCode);
-                var returnedToken;
-                if(holdString == "P" && sourceCode.charAt(lexCounter) == "(")
+                if(holdString == "int" || holdString == "char")
                 {
-                    holdString += sourceCode.charAt(lexCounter);
-                    lexCounter++;
-                    returnedToken = new Token("pOpen", holdString);
+                    returnedToken = new Token("type", holdString);
                     tokenArray.push(returnedToken);
                     continue;
                 }
                 else
                 {
-                    if(holdString == "int" || holdString == "char")
+                    for(var j=0; j<holdString.length; j++)
                     {
-                        returnedToken = new Token("type", holdString);
-                        tokenArray.push(returnedToken);
-                        continue;
-                    }
-                    else
-                    {
-                        for(var j=0; j<holdString.length; j++)
-                        {
-                            if(holdString.charAt(j).charCodeAt(0) >= 65 &&
-                                holdString.charAt(j).charCodeAt(0) <= 90)
-                            {//No upper case allowed
-                                errorCount++;
-                                putMessage("Characters must be lower-case");
-                            }
-                            else
-                            {
-                                tokenArray.push(new Token("char", holdString.charAt(j)));
-                            }
+                        if(holdString.charAt(j).charCodeAt(0) >= 65 &&
+                            holdString.charAt(j).charCodeAt(0) <= 90)
+                        {//No upper case allowed
+                            errorCount++;
+                            var count = lexCounter-1;
+                            putMessage("Characters must be lower-case at position " + count);
                         }
-                        continue;
+                        else
+                        {
+                            tokenArray.push(new Token("char", holdString.charAt(j)));
+                        }
                     }
-                        //errorCount++;
-                        //putMessage("Id's cannot be longer than one character");
+                    continue;
                 }
-                
+                    //errorCount++;
+                    //putMessage("Id's cannot be longer than one character");
             }
-            if(isOp(sourceCode.charAt(lexCounter)))
-            {
-                tokenArray.push(new Token("op", sourceCode.charAt(lexCounter)));
-                lexCounter++;
-                continue;
-            }
-            if(sourceCode.charAt(lexCounter) == "=")
-            {
-                tokenArray.push(new Token("equal", sourceCode.charAt(lexCounter)));
-                lexCounter++;
-                continue;
-            }
-            if(sourceCode.charAt(lexCounter) == ")")
-            {
-                tokenArray.push(new Token("pClose", sourceCode.charAt(lexCounter)));
-                lexCounter++;
-                continue;
-            }
-            if(sourceCode.charAt(lexCounter) == "{")
-            {
-                tokenArray.push(new Token("bOpen", sourceCode.charAt(lexCounter)));
-                lexCounter++;
-                continue;
-            }
-            if(sourceCode.charAt(lexCounter) == "\"")
-            {
-                tokenArray.push(new Token("quote", sourceCode.charAt(lexCounter)));
-                lexCounter++;
-                continue;
-            }
-            if(sourceCode.charAt(lexCounter) == "}")
-            {
-                tokenArray.push(new Token("bClose", sourceCode.charAt(lexCounter)));
-                lexCounter++;
-                continue;
-            }
-            if(sourceCode.charAt(lexCounter) == EOF)
-            {
-                tokenArray.push(new Token("end", sourceCode.charAt(lexCounter)));
-                lexCounter++;
-                if(lexCounter < sourceCode.length)
-                {
-                    //Warning, stuff after $
-                }
-                continue;
-            }
-            
+
         }
-        
-        return tokenArray;
-    }
-    
-    function Token(type, value)
-    {
-        this.type = type;
-        this.value = value;
-    }
-    
-    function evaluateDigit(code)
-    {
-        var stringReturned = code.charAt(lexCounter);
-        lexCounter++;
-        
-        while(isDigit(code.charAt(lexCounter)))
+        if(isOp(sourceCode.charAt(lexCounter)))
         {
-            stringReturned += code.charAt(lexCounter);
+            tokenArray.push(new Token("op", sourceCode.charAt(lexCounter)));
             lexCounter++;
+            continue;
         }
-        
-        return new Token("digit", stringReturned);
-    }
-    
-    function evaluateChar(code)
-    {
-        var stringReturned = code.charAt(lexCounter);
-        lexCounter++;
-        
-        while(isChar(code.charAt(lexCounter)))
+        if(sourceCode.charAt(lexCounter) == "=")
         {
-            stringReturned += code.charAt(lexCounter);
+            tokenArray.push(new Token("equal", sourceCode.charAt(lexCounter)));
             lexCounter++;
+            continue;
         }
-        
-        return stringReturned;
+        if(sourceCode.charAt(lexCounter) == ")")
+        {
+            tokenArray.push(new Token("pClose", sourceCode.charAt(lexCounter)));
+            lexCounter++;
+            continue;
+        }
+        if(sourceCode.charAt(lexCounter) == "{")
+        {
+            tokenArray.push(new Token("bOpen", sourceCode.charAt(lexCounter)));
+            lexCounter++;
+            continue;
+        }
+        if(sourceCode.charAt(lexCounter) == "\"")
+        {
+            tokenArray.push(new Token("quote", sourceCode.charAt(lexCounter)));
+            lexCounter++;
+            continue;
+        }
+        if(sourceCode.charAt(lexCounter) == "}")
+        {
+            tokenArray.push(new Token("bClose", sourceCode.charAt(lexCounter)));
+            lexCounter++;
+            continue;
+        }
+        if(sourceCode.charAt(lexCounter) == EOF)
+        {
+            tokenArray.push(new Token("end", sourceCode.charAt(lexCounter)));
+            lexCounter++;
+            if(lexCounter < sourceCode.length)
+            {
+                //Warning, stuff after $
+            }
+            continue;
+        }
+
     }
-    
-    function isDigit(ch)
+
+    return tokenArray;
+}
+
+function Token(type, value)
+{
+    this.type = type;
+    this.value = value;
+}
+
+function evaluateDigit(code)
+{
+    var stringReturned = code.charAt(lexCounter);
+    lexCounter++;
+
+    while(isDigit(code.charAt(lexCounter)))
     {
-        if(ch.charCodeAt(0) >= 48 && ch.charCodeAt(0) <= 57)
-        {
-            return true; 
-        }
-        else
-        {
-            return false;
-        }
+        stringReturned += code.charAt(lexCounter);
+        lexCounter++;
     }
-    
-    function isChar(ch)
+
+    return new Token("digit", stringReturned);
+}
+
+function evaluateChar(code)
+{
+    var stringReturned = code.charAt(lexCounter);
+    lexCounter++;
+
+    while(isChar(code.charAt(lexCounter)))
     {
-        if((ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) <= 90)||
-            (ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) <= 122))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        stringReturned += code.charAt(lexCounter);
+        lexCounter++;
     }
-    
-    function isOp(ch)
+
+    return stringReturned;
+}
+
+function isSpace(ch) {
+    if (ch.charAt(0) == " ") {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+function isDigit(ch)
+{
+    if(ch.charCodeAt(0) >= 48 && ch.charCodeAt(0) <= 57)
     {
-        if(ch == "+" || ch == "-")
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return true; 
     }
+    else
+    {
+        return false;
+    }
+}
+
+function isChar(ch)
+{
+    if((ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) <= 90)||
+        (ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) <= 122))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+function isOp(ch)
+{
+    if(ch == "+" || ch == "-")
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}

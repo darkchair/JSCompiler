@@ -2,7 +2,7 @@
 
 body
 {
-    background-color: #909193;	/* The bottom color of background.jpg. */
+    background-color: #ddd9c0;
     background-repeat: repeat-x;
     font-family: Helvetica, Verdana, Arial, sans-serif;
     font-size: 10pt;
@@ -16,7 +16,7 @@ h1
     font-size:   20pt;
     font-weight: normal;
     font-style: normal;	
-    border-bottom: 1px solid #dad8ed;  
+    border-bottom: 1px solid #000000;  
 }
 
 h2
@@ -27,9 +27,12 @@ h2
     font-style: normal;	
 }
 
-#taOutput
+.textbox
 {
-    position: relative;
-    top: -327px;
-    left: 300px;
+    background-color: #eae7d2;
+}
+
+#headers
+{
+    display: inline;
 }

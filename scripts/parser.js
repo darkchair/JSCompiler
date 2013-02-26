@@ -9,6 +9,7 @@ function parse() {
     // Report the results.
     putMessage("\nParsing found " + errorCount + " error(s).\n" +
                "Parsing found " + warningCount + " warning(s).");
+    printSymbolTable();
 }
 
 function parseProgram() {
@@ -33,8 +34,17 @@ function parseStatement() {
     }
     else if (currentToken.type == "bOpen") {
         checkToken("bOpen");
+        if(tokens[tokenIndex-2].type == "bOpen")
+            symbolTable.push(new Symbol("bOpen", "{"));
         parseStatementList();
         checkToken("bClose");
+        if(tokens[tokenIndex-2].type == "bClose")
+            symbolTable.push(new Symbol("bClose", "}"));
+    }
+    else {
+        errorCount++;
+        var index = tokenIndex - 1;
+        putMessage("ERROR: No valid statement found at position " + index + ".");
     }
 }
 
@@ -54,9 +64,13 @@ function parseStatementList() {
     if (currentToken.type == "bClose") {
         //End of the statement list
     }
-    else {
+    else if(tokenIndex != locationTracker){
+        locationTracker = tokenIndex;
         parseStatement();
         parseStatementList();
+    }
+    else {
+        //Parse found an unparsable statement
     }
 }
 
@@ -64,7 +78,7 @@ function parseExpression() {
     if (currentToken.type == "digit") {
         parseIntExpression();
     }
-    if (currentToken.type == "qOpen") {
+    if (currentToken.type == "quote") {
         parseCharExpression();
     }
     if (currentToken.type == "char") {
@@ -81,23 +95,30 @@ function parseIntExpression() {
 }
 
 function parseCharExpression() {
-    checkToken("qOpen");
+    checkToken("quote");
     parseCharList();
-    checkToken("qClose");
+    checkToken("quote");
 }
 
 function parseCharList() {
-    checkToken("char");
-    if (currentToken.type == "char") {
-        parseCharList();
+    if(currentToken.type == "char")
+    {
+        checkToken("char");
+        if (currentToken.type == "char") {
+            parseCharList();
+        }
+    }
+    else
+    {
+        //Exit the loop
     }
 }
 
-function parseVarDeclaration() {
+function parseVarDecleration() {
     checkToken("type");
-    var type = tokens[tokenIndex-1].value;
+    var type = tokens[tokenIndex-2].value;
     checkToken("char");
-    symbolTable.push(new Symbol(type, tokens[tokenIndex-1].value));
+    symbolTable.push(new Symbol(type, tokens[tokenIndex-2].value));
 }
 
 //-----------------------------------------------------------------------
@@ -107,7 +128,7 @@ function peekNextToken() {
     if (tokenIndex < tokens.length) {
         // If we're not at EOF, then return the next token in the stream.
         thisToken = tokens[tokenIndex];
-        putMessage("Next token:" + printToken(thisToken));
+        //putMessage("Next token:" + printToken(thisToken));
     }
     return thisToken;
 } 
@@ -139,18 +160,33 @@ function printToken(token)
     return "[" + token.type + " , " + token.value + "]";
 }
 
+function printSymbolTable() {
+    for (var i = 0; i < symbolTable.length; i++) {
+        document.getElementById("symbolTable").value += "[" + symbolTable[i].type + " , " + symbolTable[i].id + "]\n";
+    }
+}
+
 
 
 function checkToken(expectedKind) {
     // Validate that we have the expected token kind and et the next token.
     switch (expectedKind) {
+        case "type": putMessage("expecting a type");
+            if (currentToken.value == "int" || currentToken.value == "char") {
+                putMessage("Got a type!");
+            }
+            else {
+                errorCount++;
+                putMessage("ERROR: Not a type. Error at position " + tokenIndex + ".");
+            }
+            break;
         case "digit": putMessage("Expecting a digit");
             if (currentToken.value.charCodeAt(0) >= 48 && currentToken.value.charCodeAt(0) <= 57) {
                 putMessage("Got a digit!");
             }
             else {
                 errorCount++;
-                putMessage("NOT a digit.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not a digit.  Error at position " + tokenIndex + ".");
             }
             break;
         case "op": putMessage("Expecting an operator");
@@ -159,7 +195,7 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT an operator.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not an operator.  Error at position " + tokenIndex + ".");
             }
             break;
         case "id": putMessage("Expecting id");
@@ -168,7 +204,7 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT an id.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not an id.  Error at position " + tokenIndex + ".");
             }
             break;
         case "char": putMessage("Expecting character");
@@ -177,7 +213,7 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT a character.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not a character.  Error at position " + tokenIndex + ".");
             }
             break;
         case "equal": putMessage("Expecting equal sign");
@@ -186,7 +222,7 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT an equal sign.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not an equal sign.  Error at position " + tokenIndex + ".");
             }
             break;
         case "end": putMessage("Expecting EOF");
@@ -204,7 +240,7 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT a print expression.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not a print expression.  Error at position " + tokenIndex + ".");
             }
             break;
         case "pClose": putMessage("Expecting close of print expression");
@@ -213,7 +249,7 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT a close of print expression.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not a close of print expression.  Error at position " + tokenIndex + ".");
             }
             break;
         case "bOpen": putMessage("Expecting open bracket");
@@ -222,7 +258,7 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT an open bracket.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not an open bracket.  Error at position " + tokenIndex + ".");
             }
             break;
         case "bClose": putMessage("Expecting close bracket");
@@ -231,10 +267,19 @@ function checkToken(expectedKind) {
             }
             else {
                 errorCount++;
-                putMessage("NOT a close bracket.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not a close bracket.  Error at position " + tokenIndex + ".");
             }
             break;
-        default: putMessage("Parse Error: Invalid Token Type at position " + tokenIndex + ".");
+        case "quote": putMessage("Expecting quote");
+            if (currentToken.value == "\"") {
+                putMessage("Got a quote!");
+            }
+            else {
+                errorCount++;
+                putMessage("ERROR: Not a quote.  Error at position " + tokenIndex + ".");
+            }
+            break;
+        default: putMessage("ERROR: Invalid Token Type at position " + tokenIndex + ".");
             break;
     }
     // Consume another token, having just checked this one, because that 

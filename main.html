@@ -33,14 +33,16 @@ Char          ::== a | b | c ... z
 digit         ::== 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0
 op            ::== + | -
     </pre>
-    <div class="stuff">
-        <textarea id="taSourceCode" cols="32" rows="18"></textarea>
-        <br>
-        <input type="button" id="btnCompile" value="Compile" onclick="btnCompile_click();"/>
-        <br>
-        <textarea id="taOutput" cols="32" rows="18"></textarea>
+    <span id="headers">
+    </span>
+    <span id="frontend">
+        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2 {char b b="askdmn"} P(a)} $</textarea>
+        <textarea class="textbox" readonly id="taOutput" cols="32" rows="18"></textarea>
+        <textarea class="textbox" readonly id="symbolTable" cols="32" rows="18"></textarea>
+    </span>
+    <div>
+    <input type="button" id="btnCompile" value="Compile" onclick="btnCompile_click();"/>
     </div>
-    
     <!-- Client-side code down here, per the YSlow advice. 
     // (http://developer.yahoo.com/performance/rules.html#js_bottom) -->
     <script type="text/javascript" src="scripts/utils.js"></script>	
@@ -56,6 +58,7 @@ op            ::== + | -
     var EOF = "$";
     
     var symbolTable = new Array();
+    var locationTracker = -1;//used to break recursion if invalid statement is found
 
     function init()
     {
@@ -96,10 +99,10 @@ op            ::== + | -
     
     function printTokens(tokens)
     {
-        var tempStr = "";
+        var tempStr = "\n";
         for(var i=0; i<tokens.length; i++)
         {
-            tempStr += "[" + tokens[i].type + " , " + tokens[i].value + "]";
+            tempStr += "[" + tokens[i].type + " , " + tokens[i].value + "]\n";
         }
         return tempStr;
     }
