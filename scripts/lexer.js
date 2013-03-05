@@ -16,13 +16,14 @@ function lex()
 
     for(; lexCounter<sourceCode.length;) 
     {
-        if(isSpace(sourceCode.charAt(lexCounter)))
-        {
-            lexCounter++;
-            continue;
-        }
         if(isDigit(sourceCode.charAt(lexCounter)))
         {
+            if(isDigit(sourceCode.charAt(lexCounter+1)))
+            {//If the next character is a digit
+                errorCount++;
+                putMessage("Numbers can only be one digit long at position " + lexCounter);
+                lexCounter = sourceCode.length;
+            }
             tokenArray.push(evaluateDigit(sourceCode));
             continue;
         }
@@ -30,13 +31,29 @@ function lex()
         {
             var holdString = evaluateChar(sourceCode);
             var returnedToken;
-            if(holdString == "P" && sourceCode.charAt(lexCounter) == "(")
+            if(holdString == "P")// && sourceCode.charAt(lexCounter) == "(")
             {
-                holdString += sourceCode.charAt(lexCounter);
-                lexCounter++;
-                returnedToken = new Token("pOpen", holdString);
-                tokenArray.push(returnedToken);
-                continue;
+                while(lexCounter < sourceCode.length)
+                {
+                    if(sourceCode.charAt(lexCounter) == " ")
+                    {
+                        lexCounter++;
+                    }
+                    else if(sourceCode.charAt(lexCounter) == "(")
+                    {
+                        holdString += "(";
+                        lexCounter++;
+                        returnedToken = new Token("pOpen", holdString);
+                        tokenArray.push(returnedToken);
+                        break;
+                    }
+                    else
+                    {
+                        errorCount++;
+                        putMessage("Open parenthesis for P expression not found at position " + lexCounter);
+                        lexCounter = sourceCode.length;
+                    }
+                }
             }
             else
             {
@@ -115,6 +132,11 @@ function lex()
             }
             continue;
         }
+        if(sourceCode.charAt(lexCounter) == " ")
+        {
+            lexCounter++;
+            continue;
+        }
 
     }
 
@@ -131,13 +153,6 @@ function evaluateDigit(code)
 {
     var stringReturned = code.charAt(lexCounter);
     lexCounter++;
-
-    while(isDigit(code.charAt(lexCounter)))
-    {
-        stringReturned += code.charAt(lexCounter);
-        lexCounter++;
-    }
-
     return new Token("digit", stringReturned);
 }
 
@@ -155,14 +170,6 @@ function evaluateChar(code)
     return stringReturned;
 }
 
-function isSpace(ch) {
-    if (ch.charAt(0) == " ") {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
 function isDigit(ch)
 {
     if(ch.charCodeAt(0) >= 48 && ch.charCodeAt(0) <= 57)

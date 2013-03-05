@@ -15,7 +15,7 @@ function parse() {
 function parseProgram() {
     parseStatement();
     checkToken("end");
-    if (tokenIndex < tokens.length) {
+    if (tokenIndex < tokens.length && errorCount == 0) {
         warningCount++;
         putMessage("Warning: Tokens found after EndOfFile");
     }
@@ -33,13 +33,13 @@ function parseStatement() {
         parseVarDecleration();
     }
     else if (currentToken.type == "bOpen") {
-        checkToken("bOpen");
-        if(tokens[tokenIndex-2].type == "bOpen")
+        if(tokens[tokenIndex-1].type == "bOpen")
             symbolTable.push(new Symbol("bOpen", "{"));
+        checkToken("bOpen");
         parseStatementList();
-        checkToken("bClose");
-        if(tokens[tokenIndex-2].type == "bClose")
+        if(tokens[tokenIndex-1].type == "bClose")
             symbolTable.push(new Symbol("bClose", "}"));
+        checkToken("bClose");
     }
     else {
         errorCount++;
@@ -128,7 +128,6 @@ function peekNextToken() {
     if (tokenIndex < tokens.length) {
         // If we're not at EOF, then return the next token in the stream.
         thisToken = tokens[tokenIndex];
-        //putMessage("Next token:" + printToken(thisToken));
     }
     return thisToken;
 } 
@@ -230,8 +229,17 @@ function checkToken(expectedKind) {
                 putMessage("Got an EOF!");
             }
             else {
-                warningCount++;
-                putMessage("Warning: EndOfFile not found at position " + tokenIndex + ".");
+                if(tokenIndex == tokens.length-1)
+                {
+                    warningCount++;
+                    putMessage("Warning: EndOfFile not found at position " + tokenIndex + ".");
+                    tokens.splice(tokenIndex, 0, new Token("end", "$"));
+                }
+                else
+                {
+                    errorCount++;
+                    putMessage("ERROR: EOF not found at position " + tokenIndex + ".");
+                }
             }
             break;
         case "pOpen": putMessage("Expecting print expression");
