@@ -5,6 +5,7 @@ var lexCounter = 0;
 function lex()
 {
     var tokenArray = new Array();
+    var inQuotes = false;
 
     // Grab the "raw" source code.
     var sourceCode = document.getElementById("taSourceCode").value;
@@ -16,6 +17,23 @@ function lex()
 
     for(; lexCounter<sourceCode.length;) 
     {
+        if(inQuotes)
+        {
+            if(isChar(sourceCode.charAt(lexCounter)))
+            {
+                tokenArray.push(new Token("char", sourceCode.charAt(lexCounter)));
+                lexCounter++;
+                continue;
+            }
+            if(sourceCode.charAt(lexCounter) == " ")
+            {
+                errorCount++;
+                putMessage("Only char's allowed in CharList at position " + lexCounter);
+                lexCounter = sourceCode.length;
+                continue;
+            }
+            //If its a quote it falls through the if's
+        }
         if(isDigit(sourceCode.charAt(lexCounter)))
         {
             if(isDigit(sourceCode.charAt(lexCounter+1)))
@@ -114,6 +132,10 @@ function lex()
         {
             tokenArray.push(new Token("quote", sourceCode.charAt(lexCounter)));
             lexCounter++;
+            if(inQuotes)
+                inQuotes = false;
+            else
+                inQuotes = true;
             continue;
         }
         if(sourceCode.charAt(lexCounter) == "}")

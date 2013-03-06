@@ -1,5 +1,7 @@
 /* parser.js */
 
+var inQuotes = false;
+
 function parse() {
     putMessage("Parsing ...");
     // Grab the next token.
@@ -108,7 +110,7 @@ function parseCharList() {
             parseCharList();
         }
     }
-    else
+    else if(currentToken.type == "\"")
     {
         //Exit the loop
     }
@@ -229,7 +231,7 @@ function checkToken(expectedKind) {
                 putMessage("Got an EOF!");
             }
             else {
-                if(tokenIndex == tokens.length-1)
+                if(tokenIndex == tokens.length)
                 {
                     warningCount++;
                     putMessage("Warning: EndOfFile not found at position " + tokenIndex + ".");
