@@ -2,6 +2,14 @@
 
 var lexCounter = 0;
 
+function LexError(message) {
+    this.name = "LexError";
+    this.message = message || "Default Message";
+}
+
+LexError.prototype = new Error();
+LexError.prototype.constructor = LexError;
+
 function lex()
 {
     var tokenArray = new Array();
@@ -25,11 +33,10 @@ function lex()
                 lexCounter++;
                 continue;
             }
-            if(sourceCode.charAt(lexCounter) == " ")
+            if(sourceCode.charAt(lexCounter) === " ")
             {
-                errorCount++;
-                putMessage("Only char's allowed in CharList at position " + lexCounter);
-                lexCounter = sourceCode.length;
+                tokenArray.push(new Token("space", sourceCode.charAt(lexCounter)));
+                lexCounter++;
                 continue;
             }
             //If its a quote it falls through the if's
@@ -41,6 +48,7 @@ function lex()
                 errorCount++;
                 putMessage("Numbers can only be one digit long at position " + lexCounter);
                 lexCounter = sourceCode.length;
+                throw new LexError("Numbers can only be one digit long at position " + lexCounter);
             }
             tokenArray.push(evaluateDigit(sourceCode));
             continue;
@@ -49,33 +57,17 @@ function lex()
         {
             var holdString = evaluateChar(sourceCode);
             var returnedToken;
-            if(holdString == "P")// && sourceCode.charAt(lexCounter) == "(")
+            if(holdString === "print" && 
+                sourceCode.charAt(lexCounter) === "(")
             {
-                while(lexCounter < sourceCode.length)
-                {
-                    if(sourceCode.charAt(lexCounter) == " ")
-                    {
-                        lexCounter++;
-                    }
-                    else if(sourceCode.charAt(lexCounter) == "(")
-                    {
-                        holdString += "(";
-                        lexCounter++;
-                        returnedToken = new Token("pOpen", holdString);
-                        tokenArray.push(returnedToken);
-                        break;
-                    }
-                    else
-                    {
-                        errorCount++;
-                        putMessage("Open parenthesis for P expression not found at position " + lexCounter);
-                        lexCounter = sourceCode.length;
-                    }
-                }
+                lexCounter ++;
+                returnedToken = new Token("pOpen", "print(");
+                tokenArray.push(returnedToken);
+                continue;
             }
             else
             {
-                if(holdString == "int" || holdString == "char")
+                if(holdString === "int" || holdString === "string")
                 {
                     returnedToken = new Token("type", holdString);
                     tokenArray.push(returnedToken);
@@ -91,6 +83,7 @@ function lex()
                             errorCount++;
                             var count = lexCounter-1;
                             putMessage("Characters must be lower-case at position " + count);
+                            throw new LexError("Characters must be lower-case at position " + count);
                         }
                         else
                         {
@@ -110,25 +103,25 @@ function lex()
             lexCounter++;
             continue;
         }
-        if(sourceCode.charAt(lexCounter) == "=")
+        if(sourceCode.charAt(lexCounter) === "=")
         {
             tokenArray.push(new Token("equal", sourceCode.charAt(lexCounter)));
             lexCounter++;
             continue;
         }
-        if(sourceCode.charAt(lexCounter) == ")")
+        if(sourceCode.charAt(lexCounter) === ")")
         {
             tokenArray.push(new Token("pClose", sourceCode.charAt(lexCounter)));
             lexCounter++;
             continue;
         }
-        if(sourceCode.charAt(lexCounter) == "{")
+        if(sourceCode.charAt(lexCounter) === "{")
         {
             tokenArray.push(new Token("bOpen", sourceCode.charAt(lexCounter)));
             lexCounter++;
             continue;
         }
-        if(sourceCode.charAt(lexCounter) == "\"")
+        if(sourceCode.charAt(lexCounter) === "\"")
         {
             tokenArray.push(new Token("quote", sourceCode.charAt(lexCounter)));
             lexCounter++;
@@ -138,13 +131,13 @@ function lex()
                 inQuotes = true;
             continue;
         }
-        if(sourceCode.charAt(lexCounter) == "}")
+        if(sourceCode.charAt(lexCounter) === "}")
         {
             tokenArray.push(new Token("bClose", sourceCode.charAt(lexCounter)));
             lexCounter++;
             continue;
         }
-        if(sourceCode.charAt(lexCounter) == EOF)
+        if(sourceCode.charAt(lexCounter) === EOF)
         {
             tokenArray.push(new Token("end", sourceCode.charAt(lexCounter)));
             lexCounter++;
@@ -154,7 +147,7 @@ function lex()
             }
             continue;
         }
-        if(sourceCode.charAt(lexCounter) == " ")
+        if(sourceCode.charAt(lexCounter) === " ")
         {
             lexCounter++;
             continue;
@@ -219,7 +212,7 @@ function isChar(ch)
 
 function isOp(ch)
 {
-    if(ch == "+" || ch == "-")
+    if(ch === "+" || ch === "-")
     {
         return true;
     }

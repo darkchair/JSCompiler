@@ -11,65 +11,93 @@ function parse() {
     // Report the results.
     putMessage("\nParsing found " + errorCount + " error(s).\n" +
                "Parsing found " + warningCount + " warning(s).");
-    printSymbolTable();
+    printAST();
 }
 
 function parseProgram() {
     parseStatement();
     checkToken("end");
-    if (tokenIndex < tokens.length && errorCount == 0) {
+    if (tokenIndex < tokens.length && errorCount === 0) {
         warningCount++;
         putMessage("Warning: Tokens found after EndOfFile");
     }
 }
 
 function parseStatement() {
-    if (currentToken.type == "pOpen") {
+    //concreteSyntaxTree.addChild("Statement");
+    if (currentToken.type === "pOpen") {
         parsePrint();
     }
-    else if (currentToken.type == "char" &&
-        peekNextToken().type == "equal") {
+    else if (currentToken.type === "char" &&
+        peekNextToken().type === "equal") {
         parseIDAssign();
     }
-    else if (currentToken.type == "type") {
+    else if (currentToken.type === "type") {
         parseVarDecleration();
     }
-    else if (currentToken.type == "bOpen") {
-        if(tokens[tokenIndex-1].type == "bOpen")
-            symbolTable.push(new Symbol("bOpen", "{"));
+    else if (currentToken.type === "bOpen") {
+        if(tokens[tokenIndex-1].type === "bOpen") {
+            scope++;
+            if(symbolTables.length === scope) {
+                symbolTables.push(new SymbolTable());
+            }
+        }
         checkToken("bOpen");
+        abstractSyntaxTree.addChild("StatementBlock");
+        //concreteSyntaxTree.addChild("StatementList");
         parseStatementList();
-        if(tokens[tokenIndex-1].type == "bClose")
-            symbolTable.push(new Symbol("bClose", "}"));
+        //concreteSyntaxTree.backToParent();//?
+        if(tokens[tokenIndex-1].type === "bClose") {
+            scope--;
+        }
         checkToken("bClose");
+        abstractSyntaxTree.backToParent();
     }
     else {
         errorCount++;
         var index = tokenIndex - 1;
         putMessage("ERROR: No valid statement found at position " + index + ".");
     }
+    //concreteSyntaxTree.backToParent();
 }
 
 function parsePrint() {
+    abstractSyntaxTree.addChild("PrintExpression");
+    
     checkToken("pOpen");
+    //concreteSyntaxTree.addChild("pOpen");
+    //concreteSyntaxTree.backToParent();
+    expressionHolder = "";
     parseExpression();
     checkToken("pClose");
+    
+    abstractSyntaxTree.backToParent();
 }
 
 function parseIDAssign() {
+    abstractSyntaxTree.addChild("Assign");
+    
     checkToken("char");
+    abstractSyntaxTree.addChild(tokens[tokenIndex-2].value);
+    abstractSyntaxTree.backToParent();
     checkToken("equal");
+    expressionHolder = "";
     parseExpression();
+    abstractSyntaxTree.addChild(expressionHolder);
+    abstractSyntaxTree.backToParent();
+    abstractSyntaxTree.backToParent();
 }
 
 function parseStatementList() {
-    if (currentToken.type == "bClose") {
-        //End of the statement list
+    if (currentToken.type === "bClose") {
+        //End of the statement block
     }
-    else if(tokenIndex != locationTracker){
+    else if(tokenIndex !== locationTracker){
         locationTracker = tokenIndex;
         parseStatement();
+        //concreteSyntaxTree.addChild("StatementList");
         parseStatementList();
+        //concreteSyntaxTree.backToParent();//?
     }
     else {
         //Parse found an unparsable statement
@@ -77,50 +105,78 @@ function parseStatementList() {
 }
 
 function parseExpression() {
-    if (currentToken.type == "digit") {
+    //concreteSyntaxTree.addChild("Expression");
+    if (currentToken.type === "digit") {
+        //concreteSyntaxTree.addChild("IntExpression");
         parseIntExpression();
     }
-    if (currentToken.type == "quote") {
-        parseCharExpression();
+    else if (currentToken.type === "quote") {
+        //concreteSyntaxTree.addChild("StringExpression");
+        parseStringExpression();
     }
-    if (currentToken.type == "char") {
+    else if (currentToken.type === "char") {
+        //concreteSyntaxTree.addChild("Character");
         checkToken("char");
+        abstractSyntaxTree.addChild(tokens[tokenIndex-2].value);
+        abstractSyntaxTree.backToParent();
     }
+    //concreteSyntaxTree.backToParent();
 }
 
 function parseIntExpression() {
     checkToken("digit");
-    if (currentToken.type == "op") {
+    expressionHolder += tokens[tokenIndex-2].value;
+    if (currentToken.type === "op") {
         checkToken("op");
+        expressionHolder += tokens[tokenIndex-2].value;
         parseExpression();
     }
 }
 
-function parseCharExpression() {
+function parseStringExpression() {
     checkToken("quote");
+    expressionHolder += "\"";
     parseCharList();
     checkToken("quote");
+    expressionHolder += "\"";
 }
 
 function parseCharList() {
-    if(currentToken.type == "char")
+    if(currentToken.type === "char")
     {
         checkToken("char");
-        if (currentToken.type == "char") {
+        expressionHolder += tokens[tokenIndex-2].value;
+        if (currentToken.type === "char" || currentToken.type === "space") {
             parseCharList();
         }
     }
-    else if(currentToken.type == "\"")
+    else if(currentToken.type === "space")
+    {
+        checkToken("space");
+        expressionHolder += tokens[tokenIndex-2].value;
+        if (currentToken.type === "char" || currentToken.type === "space") {
+            parseCharList();
+        }
+    }
+    else if(currentToken.type === "\"")
     {
         //Exit the loop
     }
 }
 
 function parseVarDecleration() {
+    abstractSyntaxTree.addChild("Declaration");
+    
     checkToken("type");
     var type = tokens[tokenIndex-2].value;
     checkToken("char");
-    symbolTable.push(new Symbol(type, tokens[tokenIndex-2].value));
+    //symbolTables[scope].pushSymbol(type, tokens[tokenIndex-2].value);
+    abstractSyntaxTree.addChild(type);
+    abstractSyntaxTree.backToParent();
+    abstractSyntaxTree.addChild(tokens[tokenIndex-2].value);
+    abstractSyntaxTree.backToParent();
+    
+    abstractSyntaxTree.backToParent();
 }
 
 //-----------------------------------------------------------------------
@@ -148,7 +204,7 @@ function consumeNextToken() {
 function idIsFree(idValue) { //Not needed I think
     for(var i=0; i<symbolTable.length; i++)
     {
-        if(symbolTable[i] == idValue)
+        if(symbolTable[i] === idValue)
         {
             return false;
         }
@@ -161,19 +217,13 @@ function printToken(token)
     return "[" + token.type + " , " + token.value + "]";
 }
 
-function printSymbolTable() {
-    for (var i = 0; i < symbolTable.length; i++) {
-        document.getElementById("symbolTable").value += "[" + symbolTable[i].type + " , " + symbolTable[i].id + "]\n";
-    }
-}
-
 
 
 function checkToken(expectedKind) {
     // Validate that we have the expected token kind and et the next token.
     switch (expectedKind) {
         case "type": putMessage("expecting a type");
-            if (currentToken.value == "int" || currentToken.value == "char") {
+            if (currentToken.value === "int" || currentToken.value === "string") {
                 putMessage("Got a type!");
             }
             else {
@@ -191,7 +241,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "op": putMessage("Expecting an operator");
-            if (currentToken.value == "+" || currentToken.value == "-") {
+            if (currentToken.value === "+" || currentToken.value === "-") {
                 putMessage("Got an operator!");
             }
             else {
@@ -217,8 +267,17 @@ function checkToken(expectedKind) {
                 putMessage("ERROR: Not a character.  Error at position " + tokenIndex + ".");
             }
             break;
+        case "space": putMessage("Expecting space");
+            if (currentToken.value === " ") {
+                putMessage("Got a space!");
+            }
+            else {
+                errorCount++;
+                putMessage("ERROR: Not a space.  Error at position " + tokenIndex + ".");
+            }
+            break;
         case "equal": putMessage("Expecting equal sign");
-            if (currentToken.value == "=") {
+            if (currentToken.value === "=") {
                 putMessage("Got an equal sign!");
             }
             else {
@@ -227,11 +286,11 @@ function checkToken(expectedKind) {
             }
             break;
         case "end": putMessage("Expecting EOF");
-            if (currentToken.value == EOF) {
+            if (currentToken.value === EOF) {
                 putMessage("Got an EOF!");
             }
             else {
-                if(tokenIndex == tokens.length)
+                if(tokenIndex === tokens.length)
                 {
                     warningCount++;
                     putMessage("Warning: EndOfFile not found at position " + tokenIndex + ".");
@@ -245,7 +304,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "pOpen": putMessage("Expecting print expression");
-            if (currentToken.value == "P(") {
+            if (currentToken.value === "print(") {
                 putMessage("Got a print expression!");
             }
             else {
@@ -254,7 +313,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "pClose": putMessage("Expecting close of print expression");
-            if (currentToken.value == ")") {
+            if (currentToken.value === ")") {
                 putMessage("Got a close of print expression!");
             }
             else {
@@ -263,7 +322,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "bOpen": putMessage("Expecting open bracket");
-            if (currentToken.value == "{") {
+            if (currentToken.value === "{") {
                 putMessage("Got an open bracket!");
             }
             else {
@@ -272,7 +331,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "bClose": putMessage("Expecting close bracket");
-            if (currentToken.value == "}") {
+            if (currentToken.value === "}") {
                 putMessage("Got a close bracket!");
             }
             else {
@@ -281,7 +340,7 @@ function checkToken(expectedKind) {
             }
             break;
         case "quote": putMessage("Expecting quote");
-            if (currentToken.value == "\"") {
+            if (currentToken.value === "\"") {
                 putMessage("Got a quote!");
             }
             else {
@@ -289,7 +348,9 @@ function checkToken(expectedKind) {
                 putMessage("ERROR: Not a quote.  Error at position " + tokenIndex + ".");
             }
             break;
-        default: putMessage("ERROR: Invalid Token Type at position " + tokenIndex + ".");
+        default: 
+            errorCount++;
+            putMessage("ERROR: Invalid Token Type at position " + tokenIndex + ".");
             break;
     }
     // Consume another token, having just checked this one, because that 

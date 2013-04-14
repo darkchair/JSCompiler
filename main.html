@@ -12,42 +12,48 @@
     </p>  
     <pre>
 Program       ::== Statement $
-Statement     ::== P ( Expr )
+Statement     ::== print ( Expr )
               ::== Id = Expr
               ::== VarDecl
               ::== { StatementList }
 StatementList ::== Statement StatementList
               ::== ε
 Expr          ::== IntExpr
-              ::== CharExpr
+              ::== StringExpr
               ::== Id
 IntExpr       ::== digit op Expr
               ::== digit
-CharExpr      ::== " CharList "
+StringExpr    ::== " CharList "
 CharList      ::== Char CharList
+              ::== Space CharList
               ::== ε
 VarDecl       ::== Type Id
-Type          ::== int | char
+Type          ::== int | string
 Id            ::== Char
 Char          ::== a | b | c ... z
+Space         ::== the space character
 digit         ::== 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0
 op            ::== + | -
     </pre>
     <span id="headers">
     </span>
     <span id="frontend">
-        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2 {char b b="askdmn"} P(a)} $</textarea>
+        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2 {string b b="a skdmn"} print(a)} $</textarea>
         <textarea class="textbox" readonly id="taOutput" cols="32" rows="18"></textarea>
         <textarea class="textbox" readonly id="symbolTable" cols="32" rows="18"></textarea>
+        <textarea class="textbox" readonly id="abstractSyntaxTree" cols="32" rows="18"></textarea>
     </span>
     <div>
     <input type="button" id="btnCompile" value="Compile" onclick="btnCompile_click();"/>
     </div>
     <!-- Client-side code down here, per the YSlow advice. 
     // (http://developer.yahoo.com/performance/rules.html#js_bottom) -->
-    <script type="text/javascript" src="scripts/utils.js"></script>	
+    <script type="text/javascript" src="scripts/utils.js"></script>
+    <script type="text/javascript" src="scripts/SymbolTable.js"></script>
+    <script type="text/javascript" src="scripts/AbstractSyntaxTree.js"></script>
     <script type="text/javascript" src="scripts/lexer.js"></script>
     <script type="text/javascript" src="scripts/parser.js"></script>
+    <script type="text/javascript" src="scripts/semanticAnalysis.js"></script>
     <script type="text/javascript">
     // Global variables
     var tokens = new Array();
@@ -57,8 +63,12 @@ op            ::== + | -
     var errorCount = 0;
     var EOF = "$";
     
-    var symbolTable = new Array();
+    var symbolTables = new Array();
+        symbolTables.push(new SymbolTable());
+    var scope = 0;//current scope within the code
+    var abstractSyntaxTree = new AbstractSyntaxTree(new ASTNode(null, "root"));
     var locationTracker = -1;//used to break recursion if invalid statement is found
+    var expressionHolder = "";
 
     function init()
     {
@@ -80,11 +90,14 @@ op            ::== + | -
         putMessage("Compilation Started");
         // Grab the tokens from the lexer . . .
         tokens = lex();
-        if(errorCount == 0)
+        if(errorCount === 0)
         {
             putMessage("Lex returned [" + printTokens(tokens) + "]");
             // . . . and parse!
             parse();
+            if(errorCount === 0) {
+                analyze();
+            }
         }
         else
         {
@@ -105,6 +118,11 @@ op            ::== + | -
             tempStr += "[" + tokens[i].type + " , " + tokens[i].value + "]\n";
         }
         return tempStr;
+    }
+    
+    function printAST()
+    {
+        document.getElementById("abstractSyntaxTree").value += abstractSyntaxTree.toString();
     }
     
     
