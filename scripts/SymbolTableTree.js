@@ -104,10 +104,6 @@ function SymbolTableEntry(type, id, position) {
     this.id = id;
     this.position = position;
     this.assigned = false;
-    this.positionPointer = null;
-    
-    //A type and id of 'seperator' indicates a division between parallel scopes
-    //  at the same depth
     
 }
 

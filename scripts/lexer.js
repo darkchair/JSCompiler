@@ -62,7 +62,7 @@ function lex()
             if(holdString === "print" && 
                 sourceCode.charAt(lexCounter) === "(")
             {
-                lexCounter ++;
+                lexCounter++;
                 returnedToken = new Token("pOpen", "print(");
                 tokenArray.push(returnedToken);
                 continue;

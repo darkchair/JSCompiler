@@ -22,8 +22,12 @@ function analyze() {
     //Make recursive calls to recordAndCheckNode through the AST
     recordAndCheckNode(abstractSyntaxTree.root.children[0]);
 
-    if( areUnassignedVariables() !== 0 ) {
-        putMessage("WARNING: Unassigned variable at position ");
+    //Recursive call that returns position of first unassigned variable it finds,
+    //-1 if none found
+    var unassignedTest = areUnassignedVariables(symbolTableTree.root);1
+    if( unassignedTest !== -1 ) {
+        warningCount++;
+        putMessage("WARNING: Unassigned variable at position " + unassignedTest);
     }
     
     printSymbolTable();
@@ -46,11 +50,11 @@ function recordAndCheckNode(node) {
     else if(node.value === "Declaration") {
         var type = node.children[0].value;
         var id = node.children[1].value;
-        if (isDuplicateDeclaration(id) !== 0) {
+        if (isDuplicateDeclaration(id)) {
             putMessage("ERROR: Redeclaration at position " + node.children[0].position);
             throw new SemanticError("Error: Redeclaration at position " + node.children[0].position);
         }
-        symbolTableTree.activeNode.pushSymbol(type, id, 0);
+        symbolTableTree.activeNode.pushSymbol(type, id, node.children[0].position);
         putMessage("In scope " + symbolTableTree.activeNode.scopeId + ", \'" +
                 id + "\' declared as a(n) " + type);
         return;
@@ -134,7 +138,7 @@ function evaluateString(node) {
 
 function idType(id) {
     
-    //Stores location where semantic analysis was before searching for declaration
+    //Stores location where semantic analysis was before searching through tables
     var nodeLocation = symbolTableTree.activeNode;
     
     do {
@@ -163,45 +167,36 @@ function idType(id) {
     
 }
 
-function areUnassignedVariables() {
-    //NEEDS TO SEARCH PARALLEL SCOPES
-    //Stores location where semantic analysis was before searching for declaration
-    var nodeLocation = symbolTableTree.activeNode;
+function areUnassignedVariables(node) {
+    //Returns position in token stream of first unassigned variable found, -1 if none found
     
-    do {
-        
-        //for(var j=0; j<symbolTableTree.activeNode.children.length; j++)
-        for(var i=0; i<symbolTableTree.activeNode.table.length; i++) {
-        //For every entry in the scope's table,
-        //If the id was declared before then return the position of the declaration
-            if(symbolTableTree.activeNode.table[i].assigned === false) {
-                symbolTableTree.activeNode = nodeLocation;
-                return 1;//Should be position of duplicate declaration
-            }
-
+    for(var i=0; i<node.table.length; i++) {
+        if(node.table[i].assigned === false) {
+            return node.table[i].position;
         }
-        //Move up the tree to the current scope's parent
-        symbolTableTree.activeNode = symbolTableTree.activeNode.parent;
-        
-    } while(symbolTableTree.activeNode !== null);
+    }
+    for(var i=0; i<node.children.length; i++) {
+        var test = areUnassignedVariables(node.children[i]);
+        if(test !== -1)
+            return test;
+    }
     
-    symbolTableTree.activeNode = nodeLocation;
-    return 0;
+    return -1;
     
 }
 
 function isDuplicateDeclaration(id) {
     
-    //Stores location where semantic analysis was before searching for declaration
+    //Stores location where semantic analysis was before searching through tables
     var nodeLocation = symbolTableTree.activeNode;
     do {
         
         for(var i=0; i<symbolTableTree.activeNode.table.length; i++) {
         //For every entry in the scope's table,
-        //If the id was declared before then return the position of the declaration
+        //If the id was declared before then return true
             if(symbolTableTree.activeNode.table[i].id === id) {
                 symbolTableTree.activeNode = nodeLocation;
-                return 1;//Should be position of duplicate declaration
+                return true;
             }
 
         }
@@ -211,7 +206,7 @@ function isDuplicateDeclaration(id) {
     } while(symbolTableTree.activeNode !== null);
     
     symbolTableTree.activeNode = nodeLocation;
-    return 0;
+    return false;
     
 }
 
