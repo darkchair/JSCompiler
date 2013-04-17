@@ -14,12 +14,12 @@ function AbstractSyntaxTree(root) {
     this.activeNode = null;
     
     //Functions
-    this.addChild = function(value) {
+    this.addChild = function(value, position) {
         
         if(this.activeNode === null) {
             this.activeNode = this.root;   
         }
-        var newN = new ASTNode(this.activeNode, value);
+        var newN = new ASTNode(this.activeNode, value, position);
         this.activeNode.children.push(newN);
         this.activeNode = newN;
         
@@ -89,11 +89,12 @@ function AbstractSyntaxTree(root) {
     
 }
 
-function ASTNode (parent, value) {
+function ASTNode (parent, value, position) {
     
     //Members
     this.parent = parent;
     this.value = value;
     this.children = new Array();   
+    this.position = position; //position in the sequence of tokens
     
 }

@@ -12,6 +12,8 @@ LexError.prototype.constructor = LexError;
 
 function lex()
 {
+    putMessage("\n-------------------");
+    putMessage("Lexing ...");
     var tokenArray = new Array();
     var inQuotes = false;
 

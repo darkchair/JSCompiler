@@ -3,6 +3,7 @@
 var inQuotes = false;
 
 function parse() {
+    putMessage("\n-------------------");
     putMessage("Parsing ...");
     // Grab the next token.
     currentToken = consumeNextToken();
@@ -24,7 +25,6 @@ function parseProgram() {
 }
 
 function parseStatement() {
-    //concreteSyntaxTree.addChild("Statement");
     if (currentToken.type === "pOpen") {
         parsePrint();
     }
@@ -38,15 +38,10 @@ function parseStatement() {
     else if (currentToken.type === "bOpen") {
         if(tokens[tokenIndex-1].type === "bOpen") {
             scope++;
-            if(symbolTables.length === scope) {
-                symbolTables.push(new SymbolTable());
-            }
         }
         checkToken("bOpen");
-        abstractSyntaxTree.addChild("StatementBlock");
-        //concreteSyntaxTree.addChild("StatementList");
+        abstractSyntaxTree.addChild("StatementBlock", tokenIndex-1);
         parseStatementList();
-        //concreteSyntaxTree.backToParent();//?
         if(tokens[tokenIndex-1].type === "bClose") {
             scope--;
         }
@@ -58,33 +53,33 @@ function parseStatement() {
         var index = tokenIndex - 1;
         putMessage("ERROR: No valid statement found at position " + index + ".");
     }
-    //concreteSyntaxTree.backToParent();
 }
 
 function parsePrint() {
-    abstractSyntaxTree.addChild("PrintExpression");
+    abstractSyntaxTree.addChild("PrintExpression", tokenIndex-1);
     
     checkToken("pOpen");
-    //concreteSyntaxTree.addChild("pOpen");
-    //concreteSyntaxTree.backToParent();
-    expressionHolder = "";
+    expressionHolder = ""; var expLocation = tokenIndex-1;
     parseExpression();
+    abstractSyntaxTree.addChild(expressionHolder, expLocation);
+    abstractSyntaxTree.backToParent();
     checkToken("pClose");
     
     abstractSyntaxTree.backToParent();
 }
 
 function parseIDAssign() {
-    abstractSyntaxTree.addChild("Assign");
+    abstractSyntaxTree.addChild("Assign", tokenIndex);
     
+    abstractSyntaxTree.addChild(tokens[tokenIndex-1].value, tokenIndex-1);
+    abstractSyntaxTree.backToParent();
     checkToken("char");
-    abstractSyntaxTree.addChild(tokens[tokenIndex-2].value);
-    abstractSyntaxTree.backToParent();
     checkToken("equal");
-    expressionHolder = "";
+    expressionHolder = ""; var expLocation = tokenIndex-1;
     parseExpression();
-    abstractSyntaxTree.addChild(expressionHolder);
+    abstractSyntaxTree.addChild(expressionHolder, expLocation);
     abstractSyntaxTree.backToParent();
+    
     abstractSyntaxTree.backToParent();
 }
 
@@ -95,9 +90,7 @@ function parseStatementList() {
     else if(tokenIndex !== locationTracker){
         locationTracker = tokenIndex;
         parseStatement();
-        //concreteSyntaxTree.addChild("StatementList");
         parseStatementList();
-        //concreteSyntaxTree.backToParent();//?
     }
     else {
         //Parse found an unparsable statement
@@ -105,22 +98,17 @@ function parseStatementList() {
 }
 
 function parseExpression() {
-    //concreteSyntaxTree.addChild("Expression");
     if (currentToken.type === "digit") {
-        //concreteSyntaxTree.addChild("IntExpression");
         parseIntExpression();
     }
     else if (currentToken.type === "quote") {
-        //concreteSyntaxTree.addChild("StringExpression");
         parseStringExpression();
     }
     else if (currentToken.type === "char") {
-        //concreteSyntaxTree.addChild("Character");
         checkToken("char");
-        abstractSyntaxTree.addChild(tokens[tokenIndex-2].value);
+        abstractSyntaxTree.addChild(tokens[tokenIndex-2].value, tokenIndex-2);
         abstractSyntaxTree.backToParent();
     }
-    //concreteSyntaxTree.backToParent();
 }
 
 function parseIntExpression() {
@@ -165,15 +153,14 @@ function parseCharList() {
 }
 
 function parseVarDecleration() {
-    abstractSyntaxTree.addChild("Declaration");
+    abstractSyntaxTree.addChild("Declaration", tokenIndex-1);
     
     checkToken("type");
     var type = tokens[tokenIndex-2].value;
-    checkToken("char");
-    //symbolTables[scope].pushSymbol(type, tokens[tokenIndex-2].value);
-    abstractSyntaxTree.addChild(type);
+    abstractSyntaxTree.addChild(type, tokenIndex-2);
     abstractSyntaxTree.backToParent();
-    abstractSyntaxTree.addChild(tokens[tokenIndex-2].value);
+    checkToken("char");
+    abstractSyntaxTree.addChild(tokens[tokenIndex-2].value, tokenIndex-2);
     abstractSyntaxTree.backToParent();
     
     abstractSyntaxTree.backToParent();

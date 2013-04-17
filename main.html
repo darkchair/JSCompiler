@@ -38,7 +38,7 @@ op            ::== + | -
     <span id="headers">
     </span>
     <span id="frontend">
-        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2 {string b b="a skdmn"} print(a)} $</textarea>
+        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2 {string b b="a skdmn"}{int d} print(a)} $</textarea>
         <textarea class="textbox" readonly id="taOutput" cols="32" rows="18"></textarea>
         <textarea class="textbox" readonly id="symbolTable" cols="32" rows="18"></textarea>
         <textarea class="textbox" readonly id="abstractSyntaxTree" cols="32" rows="18"></textarea>
@@ -49,8 +49,8 @@ op            ::== + | -
     <!-- Client-side code down here, per the YSlow advice. 
     // (http://developer.yahoo.com/performance/rules.html#js_bottom) -->
     <script type="text/javascript" src="scripts/utils.js"></script>
-    <script type="text/javascript" src="scripts/SymbolTable.js"></script>
     <script type="text/javascript" src="scripts/AbstractSyntaxTree.js"></script>
+    <script type="text/javascript" src="scripts/SymbolTableTree.js"></script>
     <script type="text/javascript" src="scripts/lexer.js"></script>
     <script type="text/javascript" src="scripts/parser.js"></script>
     <script type="text/javascript" src="scripts/semanticAnalysis.js"></script>
@@ -63,8 +63,8 @@ op            ::== + | -
     var errorCount = 0;
     var EOF = "$";
     
-    var symbolTables = new Array();
-        symbolTables.push(new SymbolTable());
+    var symbolTableTree = new SymbolTableTree();
+        //symbolTableTree.push(new SymbolTable());
     var scope = 0;//current scope within the code
     var abstractSyntaxTree = new AbstractSyntaxTree(new ASTNode(null, "root"));
     var locationTracker = -1;//used to break recursion if invalid statement is found
