@@ -58,8 +58,10 @@ function lex()
         if(isChar(sourceCode.charAt(lexCounter)))
         {
             var holdString = evaluateChar(sourceCode);
+            //evaluateChar() will add trailing spaces, so ignore them
+            //when analyzing the string by using substring()
             var returnedToken;
-            if(holdString === "print" && 
+            if(holdString.substring(0,5) === "print" && 
                 sourceCode.charAt(lexCounter) === "(")
             {
                 lexCounter++;
@@ -69,9 +71,15 @@ function lex()
             }
             else
             {
-                if(holdString === "int" || holdString === "string")
+                if(holdString.substring(0,3) === "int")
                 {
-                    returnedToken = new Token("type", holdString);
+                    returnedToken = new Token("type", holdString.substring(0,3));
+                    tokenArray.push(returnedToken);
+                    continue;
+                }
+                else if(holdString.substring(0,6) === "string")
+                {
+                    returnedToken = new Token("type", holdString.substring(0,6));
                     tokenArray.push(returnedToken);
                     continue;
                 }
@@ -87,7 +95,7 @@ function lex()
                             putMessage("Characters must be lower-case at position " + count);
                             throw new LexError("Characters must be lower-case at position " + count);
                         }
-                        else
+                        else if(holdString.charAt(j) !== " ")
                         {
                             tokenArray.push(new Token("char", holdString.charAt(j)));
                         }
@@ -177,9 +185,14 @@ function evaluateChar(code)
 {
     var stringReturned = code.charAt(lexCounter);
     lexCounter++;
+    var spaceFlag = false;
 
-    while(isChar(code.charAt(lexCounter)))
+    while( (isChar(code.charAt(lexCounter)) && !spaceFlag ) ||
+            code.charAt(lexCounter) === " ")
     {
+        if(code.charAt(lexCounter) === " ")
+            spaceFlag = true;
+        
         stringReturned += code.charAt(lexCounter);
         lexCounter++;
     }

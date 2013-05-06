@@ -115,7 +115,7 @@ op            ::== + | -
         var tempStr = "\n";
         for(var i=0; i<tokens.length; i++)
         {
-            tempStr += "[" + tokens[i].type + " , " + tokens[i].value + "]\n";
+            tempStr += "" + i + ": [" + tokens[i].type + " , " + tokens[i].value + "]\n";
         }
         return tempStr;
     }

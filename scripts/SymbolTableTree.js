@@ -104,6 +104,7 @@ function SymbolTableEntry(type, id, position) {
     this.id = id;
     this.position = position;
     this.assigned = false;
+    this.used = false;
     
 }
 

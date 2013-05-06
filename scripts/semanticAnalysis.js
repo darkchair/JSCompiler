@@ -24,10 +24,15 @@ function analyze() {
 
     //Recursive call that returns position of first unassigned variable it finds,
     //-1 if none found
-    var unassignedTest = areUnassignedVariables(symbolTableTree.root);1
+    var unassignedTest = areUnassignedVariables(symbolTableTree.root);
     if( unassignedTest !== -1 ) {
         warningCount++;
         putMessage("WARNING: Unassigned variable at position " + unassignedTest);
+    }
+    var unusedTest = areUnusedVariables(symbolTableTree.root);
+    if( unusedTest !== -1 ) {
+        warningCount++;
+        putMessage("WARNING: Unused variable at position " + unusedTest);
     }
     
     printSymbolTable();
@@ -77,13 +82,21 @@ function recordAndCheckNode(node) {
     }
     
     else if(node.value === "PrintExpression") {
-        var checkType = idType(node.children[0].value);
-        if(checkType !== "null") {
-            return;
-        }
-        else {
-            putMessage("ERROR: Undeclared variable at position " + node.children[0].position);
-            throw new SemanticError("Error: Undeclared variable at position " + node.children[0].position);
+        
+        if( node.children[0].value.length === 1 &&
+            (node.children[0].value.charCodeAt(0) >= 97 &&
+                node.children[0].value.charCodeAt(0) <= 122) ) {
+            var checkType = idType(node.children[0].value);
+            if(checkType !== "null") {
+                markVariableAsUsed(node.children[0].value);
+                return;
+            }
+            else {
+                putMessage("ERROR: Undeclared variable at position " +
+                        node.children[0].position);
+                throw new SemanticError("Error: Undeclared variable at position " +
+                        node.children[0].position);
+            }
         }
     }
     
@@ -167,6 +180,32 @@ function idType(id) {
     
 }
 
+function markVariableAsUsed(id) {
+    
+    //Stores location where semantic analysis was before searching through tables
+    var nodeLocation = symbolTableTree.activeNode;
+    
+    do {
+        
+        for(var i=0; i<symbolTableTree.activeNode.table.length; i++) {
+        //For every entry in the scope's table,
+        //If the id was declared here then mark the variable as used
+            if(symbolTableTree.activeNode.table[i].id === id) {
+                symbolTableTree.activeNode.table[i].used = true;
+                symbolTableTree.activeNode = nodeLocation;
+                return;
+            }
+
+        }
+        //Move up the tree to the current scope's parent
+        symbolTableTree.activeNode = symbolTableTree.activeNode.parent;
+        
+    } while(symbolTableTree.activeNode !== null);
+    
+    symbolTableTree.activeNode = nodeLocation;
+    
+}
+
 function areUnassignedVariables(node) {
     //Returns position in token stream of first unassigned variable found, -1 if none found
     
@@ -185,29 +224,35 @@ function areUnassignedVariables(node) {
     
 }
 
-function isDuplicateDeclaration(id) {
+function areUnusedVariables(node) {
+    //Returns position in token stream of first unused variable found, -1 if none found
     
-    //Stores location where semantic analysis was before searching through tables
-    var nodeLocation = symbolTableTree.activeNode;
-    do {
-        
-        for(var i=0; i<symbolTableTree.activeNode.table.length; i++) {
-        //For every entry in the scope's table,
-        //If the id was declared before then return true
-            if(symbolTableTree.activeNode.table[i].id === id) {
-                symbolTableTree.activeNode = nodeLocation;
-                return true;
-            }
-
+    for(var i=0; i<node.table.length; i++) {
+        if(node.table[i].used === false) {
+            return node.table[i].position;
         }
-        //Move up the tree to the current scope's parent
-        symbolTableTree.activeNode = symbolTableTree.activeNode.parent;
-        
-    } while(symbolTableTree.activeNode !== null);
+    }
+    for(var i=0; i<node.children.length; i++) {
+        var test = areUnusedVariables(node.children[i]);
+        if(test !== -1)
+            return test;
+    }
     
-    symbolTableTree.activeNode = nodeLocation;
+    return -1;
+    
+}
+
+function isDuplicateDeclaration(id) {
+    for(var i=0; i<symbolTableTree.activeNode.table.length; i++) {
+    //For every entry in the scope's table,
+    //If the id was declared before then return true
+        if(symbolTableTree.activeNode.table[i].id === id) {
+            symbolTableTree.activeNode = nodeLocation;
+            return true;
+        }
+
+    }
     return false;
-    
 }
 
 
