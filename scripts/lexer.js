@@ -225,6 +225,18 @@ function isChar(ch)
     }
 }
 
+function isID(ch)
+{
+    if((ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) <= 122))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 function isOp(ch)
 {
     if(ch === "+" || ch === "-")

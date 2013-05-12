@@ -1,6 +1,7 @@
 /* parser.js */
 
 var inQuotes = false;
+var expressionHolder = "";
 
 function parse() {
     putMessage("\n-------------------");
@@ -61,8 +62,8 @@ function parsePrint() {
     checkToken("pOpen");
     expressionHolder = ""; var expLocation = tokenIndex-1;
     parseExpression();
-    abstractSyntaxTree.addChild(expressionHolder, expLocation);
-    abstractSyntaxTree.backToParent();
+    abstractSyntaxTree.addExpression(expressionHolder, expLocation);
+    //abstractSyntaxTree.backToParent(); already handled in addExpression()
     checkToken("pClose");
     
     abstractSyntaxTree.backToParent();
@@ -77,8 +78,8 @@ function parseIDAssign() {
     checkToken("equal");
     expressionHolder = ""; var expLocation = tokenIndex-1;
     parseExpression();
-    abstractSyntaxTree.addChild(expressionHolder, expLocation);
-    abstractSyntaxTree.backToParent();
+    abstractSyntaxTree.addExpression(expressionHolder, expLocation);
+    //abstractSyntaxTree.backToParent(); already handled in addExpression()
     
     abstractSyntaxTree.backToParent();
 }
@@ -106,8 +107,7 @@ function parseExpression() {
     }
     else if (currentToken.type === "char") {
         checkToken("char");
-        abstractSyntaxTree.addChild(tokens[tokenIndex-2].value, tokenIndex-2);
-        abstractSyntaxTree.backToParent();
+        expressionHolder += tokens[tokenIndex-2].value;
     }
 }
 

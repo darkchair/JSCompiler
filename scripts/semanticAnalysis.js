@@ -60,16 +60,16 @@ function recordAndCheckNode(node) {
             throw new SemanticError("Error: Redeclaration at position " + node.children[0].position);
         }
         symbolTableTree.activeNode.pushSymbol(type, id, node.children[0].position);
+        node.scope = symbolTableTree.activeNode;
         putMessage("In scope " + symbolTableTree.activeNode.scopeId + ", \'" +
                 id + "\' declared as a(n) " + type);
-        return;
     }
     
     else if(node.value === "Assign") {
-        var type = evaluateExpression(node);
-        var checkType = idType(node.children[0].value);
+        var checkType = idType(node.children[0].value); //type of identifier
+        var type = evaluateExpression(node.children[1]); //type of expression being assigned
         if(checkType === type) {
-            return;
+            node.scope = idScope(node.children[0].value);
         }
         else if(checkType !== "null"){
             putMessage("ERROR: Type mismatch at position " + node.children[0].position);
@@ -79,6 +79,11 @@ function recordAndCheckNode(node) {
             putMessage("ERROR: Undeclared variable at position " + node.children[0].position);
             throw new SemanticError("Error: Undeclared variable at position " + node.children[0].position);
         }
+        //Check if variables in expression are declared!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        /*if(expressionHasUndeclareds(node)) {
+            putMessage("ERROR: Undeclared variable at position " + node.children[0].position);
+            throw new SemanticError("Error: Undeclared variable at position " + node.children[0].position);
+        }*/
     }
     
     else if(node.value === "PrintExpression") {
@@ -86,10 +91,11 @@ function recordAndCheckNode(node) {
         if( node.children[0].value.length === 1 &&
             (node.children[0].value.charCodeAt(0) >= 97 &&
                 node.children[0].value.charCodeAt(0) <= 122) ) {
+            
             var checkType = idType(node.children[0].value);
             if(checkType !== "null") {
+                node.scope = idScope(node.children[0].value);
                 markVariableAsUsed(node.children[0].value);
-                return;
             }
             else {
                 putMessage("ERROR: Undeclared variable at position " +
@@ -98,15 +104,16 @@ function recordAndCheckNode(node) {
                         node.children[0].position);
             }
         }
+        
     }
     
 }
 
 function evaluateExpression(node) {
-    //This isn't robust enough
+    //This isn't robust enough, I think
     if(evaluateInt(node))
         return "int";
-    if(evaluateString(node))
+    else if(evaluateString(node))
         return "string";
     else
         return "invalid";
@@ -115,7 +122,21 @@ function evaluateExpression(node) {
 
 function evaluateInt(node) {
     
-    for(var i=0; i<node.children[1].value.length; i++) {
+    if(node.value === "+" || node.value === "-" ||
+        (node.value.charCodeAt(0) >= 48  && node.value.charCodeAt(0) <= 57) ) {
+       return true;
+    }
+    else if (node.value.charCodeAt(0) >= 97 &&
+                node.value.charCodeAt(0) <= 122) {
+            if(idType(node.value.charAt(0)) !== "int")
+                return false;
+            else
+                return true;
+    }
+    else
+        return false;
+    
+    /*for(var i=0; i<node.children[1].value.length; i++) {
         
         if(
            node.children[1].value.charAt(i) === "+" ||
@@ -134,16 +155,14 @@ function evaluateInt(node) {
             return false;
         }
         
-    }
-    
-    return true;
+    }*/
     
 }
 
 function evaluateString(node) {
     
     //Does this need a better evaluation?
-    if(node.children[1].value.charAt(0) === "\"") {
+    if(node.value.charAt(0) === "\"") {
         return true;
     }
     
@@ -167,6 +186,34 @@ function idType(id) {
                 var returnType = symbolTableTree.activeNode.table[i].type;
                 symbolTableTree.activeNode = nodeLocation;
                 return returnType;
+            }
+
+        }
+        //Move up the tree to the current scope's parent
+        symbolTableTree.activeNode = symbolTableTree.activeNode.parent;
+        
+    } while(symbolTableTree.activeNode !== null);
+    
+    symbolTableTree.activeNode = nodeLocation;
+    return "null";
+    
+}
+
+function idScope(id) {
+    
+    //Stores location where semantic analysis was before searching through tables
+    var nodeLocation = symbolTableTree.activeNode;
+    
+    do {
+        
+        for(var i=0; i<symbolTableTree.activeNode.table.length; i++) {
+        //For every entry in the scope's table,
+        //If the id was declared here then return the scope's node
+            if(symbolTableTree.activeNode.table[i].id === id) {
+                symbolTableTree.activeNode.table[i].assigned = true;
+                var returnNode = symbolTableTree.activeNode;
+                symbolTableTree.activeNode = nodeLocation;
+                return returnNode;
             }
 
         }
@@ -226,6 +273,7 @@ function areUnassignedVariables(node) {
 
 function areUnusedVariables(node) {
     //Returns position in token stream of first unused variable found, -1 if none found
+    //NEEDS TO LOOK INSIDE EXRESSIONS
     
     for(var i=0; i<node.table.length; i++) {
         if(node.table[i].used === false) {

@@ -38,10 +38,11 @@ op            ::== + | -
     <span id="headers">
     </span>
     <span id="frontend">
-        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2 {string b b="a skdmn"}{int d} print(1+a)} $</textarea>
+        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2+3 {string b b="a skdmn"}{int d} print(1+5+a)} $</textarea>
         <textarea class="textbox" readonly id="taOutput" cols="32" rows="18"></textarea>
         <textarea class="textbox" readonly id="symbolTable" cols="32" rows="18"></textarea>
         <textarea class="textbox" readonly id="abstractSyntaxTree" cols="32" rows="18"></textarea>
+        <textarea class="textbox" readonly id="outputCode" cols="32" rows="18"></textarea>
     </span>
     <div>
     <input type="button" id="btnCompile" value="Compile" onclick="btnCompile_click();"/>
@@ -54,6 +55,7 @@ op            ::== + | -
     <script type="text/javascript" src="scripts/lexer.js"></script>
     <script type="text/javascript" src="scripts/parser.js"></script>
     <script type="text/javascript" src="scripts/semanticAnalysis.js"></script>
+    <script type="text/javascript" src="scripts/codeGeneration.js"></script>
     <script type="text/javascript">
     // Global variables
     var tokens = new Array();
@@ -67,8 +69,8 @@ op            ::== + | -
         //symbolTableTree.push(new SymbolTable());
     var scope = 0;//current scope within the code
     var abstractSyntaxTree = new AbstractSyntaxTree(new ASTNode(null, "root"));
+    
     var locationTracker = -1;//used to break recursion if invalid statement is found
-    var expressionHolder = "";
 
     function init()
     {
@@ -97,6 +99,9 @@ op            ::== + | -
             parse();
             if(errorCount === 0) {
                 analyze();
+            }
+            if(errorCount === 0) {
+                generateCode();
             }
         }
         else

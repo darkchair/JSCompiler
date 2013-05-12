@@ -25,23 +25,63 @@ function AbstractSyntaxTree(root) {
         
     };
     
-    this.addExpression = function(value) {
+    this.addExpression = function(expr, location) {
         
-        for(var i=value.length; i>0; i--) {
+        
+        if(expr.charAt(0) === "\"") { //If its a string expression
+            this.addChild(expr, location);
+            this.backToParent();
+        }
+        else if(expr.search(/\+/) !== -1 || expr.search("-") !== -1) //If its an int expression
+            this.addIntExpression(expr, location);
+        else {//If its a character 
+            this.addChild(expr, location);
+            this.backToParent();
+        }
+        
+    };
+    
+    this.addIntExpression = function(expr, location) {
+        var returnPoint = this.activeNode;
+        
+        var locater = expr.length-1;
+        while(locater >= 0) {
             
-            if(value.charAt(i) === "+" || value.charAt(i) === "-") {
-                this.addChild(new ASTNode(this.activeNode, value.charAt(i)));
-                //this.addChild
+            if(locater === 0) {
+                this.addChild(expr.charAt(locater), location);
+                this.backToParent();
+                locater--;
+            }
+            else if(isOp(expr.charAt(locater))) {
+                this.addChild(expr.charAt(locater), location);
+                this.addChild(expr.charAt(locater+1), location);
+                this.backToParent();
+                //this.addChild(expr.charAt(locater-1), location);
+                locater--;
+            }
+            else if(isID(expr.charAt(locater))) {
+                locater--;
+                continue;
+            }
+            else if(isDigit(expr.charAt(locater))) {
+                locater--;
+                continue;
+            }
+            else {
+                //Error
             }
             
         }
         
-    }
+        this.activeNode = returnPoint;
+        
+    };
     
     this.backToParent = function() {
         
-        if(this.activeNode.root === null){
+        if(this.activeNode.parent === null){
             //We're done?
+            putMessage("uhoh");
         }
             
         this.activeNode = this.activeNode.parent;
@@ -94,6 +134,7 @@ function ASTNode (parent, value, position) {
     //Members
     this.parent = parent;
     this.value = value;
+    this.scope = null;
     this.children = new Array();   
     this.position = position; //position in the sequence of tokens
     
