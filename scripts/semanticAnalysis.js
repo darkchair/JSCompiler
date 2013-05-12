@@ -107,6 +107,103 @@ function recordAndCheckNode(node) {
         
     }
     
+    else if(node.value === "WhileStatement") {
+        
+        //Check Boolean part (node.children[0])
+        if(node.children[0].value === "Equals?") {
+            
+            //Stores location where the AST was before searching through tables
+            var nodeLocation = node;
+            
+            node = node.children[0];
+            //Go down tree until you find the deepest BooleanExpr
+            while(node.children[1].value === "Equals?") {
+                node = node.children[1];
+            }
+            
+            //Going back up the tree, compare the types of the two compared expressions
+            //If they aren't compatible, throw an error
+            var typeLeft;
+            var typeRight = evaluateExpression(node.children[1]);
+            while(node.value !== "WhileStatement") {
+                typeLeft = evaluateExpression(node.children[0]);
+                
+                if(typeLeft !== typeRight) {
+                    putMessage("ERROR: Incompatible types at position " +
+                        node.children[0].position);
+                    throw new SemanticError("Error: Incompatible types at position " +
+                        node.children[0].position);
+                    break;
+                }
+                else {
+                    node = node.parent;
+                }
+                
+                //typeRight keeps the type from the previous check (unless the type rules change)
+            }
+            
+            node = nodeLocation;
+            
+        }
+        else if(node.children[0].value === "true" || node.children[0].value === "false") {
+            
+            //We're good
+            
+        }
+        
+        //Check body (node.children[1])
+        recordAndCheckNode(node.children[1]);
+    }
+    
+    else if(node.value === "IfStatement") {
+        
+        //Check Boolean part (node.children[0])
+        if(node.children[0].value === "Equals?") {
+            
+            //Stores location where the AST was before searching through tables
+            var nodeLocation = node;
+            
+            node = node.children[0];
+            //Go down tree until you find the deepest BooleanExpr
+            while(node.children[1].value === "Equals?") {
+                node = node.children[1];
+            }
+            
+            //Going back up the tree, compare the types of the two compared expressions
+            //If they aren't compatible, throw an error
+            var typeLeft;
+            var typeRight = evaluateExpression(node.children[1]);
+            while(node.value !== "IfStatement") {
+                typeLeft = evaluateExpression(node.children[0]);
+                
+                if(typeLeft !== typeRight) {
+                    putMessage("ERROR: Incompatible types at position " +
+                        node.children[0].position);
+                    throw new SemanticError("Error: Incompatible types at position " +
+                        node.children[0].position);
+                    break;
+                }
+                else {
+                    node = node.parent;
+                }
+                
+                //typeRight keeps the type from the previous check (unless the type rules change)
+            }
+            
+            node = nodeLocation;
+            
+        }
+        else if(node.children[0].value === "true" || node.children[0].value === "false") {
+            
+            //We're good
+            
+        }
+        
+        //Check body (node.children[1])
+        recordAndCheckNode(node.children[1]);
+        
+    }
+    
 }
 
 function evaluateExpression(node) {
@@ -115,6 +212,8 @@ function evaluateExpression(node) {
         return "int";
     else if(evaluateString(node))
         return "string";
+    else if(evaluateBoolean(node))
+        return "boolean";
     else
         return "invalid";
     
@@ -165,6 +264,13 @@ function evaluateString(node) {
     if(node.value.charAt(0) === "\"") {
         return true;
     }
+    
+}
+
+function evaluateBoolean(node) {
+    
+    if(node.value === "true" || node.value === "false")
+        return true;
     
 }
 

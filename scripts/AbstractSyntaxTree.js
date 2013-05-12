@@ -34,7 +34,10 @@ function AbstractSyntaxTree(root) {
         }
         else if(expr.search(/\+/) !== -1 || expr.search("-") !== -1) //If its an int expression
             this.addIntExpression(expr, location);
-        else {//If its a character 
+        else if(expr.charAt(0) === "(") { //If its a boolean expression
+            
+        }
+        else {//If its an id 
             this.addChild(expr, location);
             this.backToParent();
         }

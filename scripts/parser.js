@@ -26,11 +26,11 @@ function parseProgram() {
 }
 
 function parseStatement() {
-    if (currentToken.type === "pOpen") {
+    if (currentToken.type === "PrintStatement") {
         parsePrint();
     }
     else if (currentToken.type === "char" &&
-        peekNextToken().type === "equal") {
+            peekNextToken().type === "equal") {
         parseIDAssign();
     }
     else if (currentToken.type === "type") {
@@ -49,6 +49,12 @@ function parseStatement() {
         checkToken("bClose");
         abstractSyntaxTree.backToParent();
     }
+    else if (currentToken.type === "WhileStatement") {
+        parseWhileStatement();
+    }
+    else if (currentToken.type === "IfStatement") {
+        parseIfStatement();
+    }
     else {
         errorCount++;
         var index = tokenIndex - 1;
@@ -59,6 +65,7 @@ function parseStatement() {
 function parsePrint() {
     abstractSyntaxTree.addChild("PrintExpression", tokenIndex-1);
     
+    checkToken("PrintStatement");
     checkToken("pOpen");
     expressionHolder = ""; var expLocation = tokenIndex-1;
     parseExpression();
@@ -109,6 +116,9 @@ function parseExpression() {
         checkToken("char");
         expressionHolder += tokens[tokenIndex-2].value;
     }
+    else if (currentToken.type === "pOpen" || currentToken.type === "boolVal") {
+        parseBooleanExpression();
+    }
 }
 
 function parseIntExpression() {
@@ -127,6 +137,28 @@ function parseStringExpression() {
     parseCharList();
     checkToken("quote");
     expressionHolder += "\"";
+}
+
+function parseBooleanExpression() {
+    if(currentToken.type === "pOpen") {
+        abstractSyntaxTree.addChild("Equals?", tokenIndex-1);
+        
+        checkToken("pOpen");
+        expressionHolder = ""; var expLocation = tokenIndex-1;
+        parseExpression();
+        abstractSyntaxTree.addExpression(expressionHolder, expLocation);
+        checkToken("equal");checkToken("equal");
+        expressionHolder = ""; expLocation = tokenIndex-1;
+        parseExpression();
+        abstractSyntaxTree.addExpression(expressionHolder, expLocation);
+        checkToken("pClose");
+        
+        abstractSyntaxTree.backToParent();
+    }
+    else if(currentToken.type === "boolVal") {
+        expressionHolder += currentToken.value;
+        checkToken("boolVal");
+    }
 }
 
 function parseCharList() {
@@ -164,6 +196,36 @@ function parseVarDecleration() {
     abstractSyntaxTree.backToParent();
     
     abstractSyntaxTree.backToParent();
+}
+
+function parseWhileStatement() {
+    abstractSyntaxTree.addChild("WhileStatement", tokenIndex-1);
+    
+    checkToken("WhileStatement");
+    parseBooleanExpression();
+    checkToken("bOpen");
+    abstractSyntaxTree.addChild("StatementBlock", tokenIndex-1);
+    parseStatementList();
+    checkToken("bClose");
+    abstractSyntaxTree.backToParent();
+    
+    abstractSyntaxTree.backToParent();
+}
+
+function parseIfStatement() {
+    
+    abstractSyntaxTree.addChild("IfStatement", tokenIndex-1);
+    
+    checkToken("IfStatement");
+    parseBooleanExpression();
+    checkToken("bOpen");
+    abstractSyntaxTree.addChild("StatementBlock", tokenIndex-1);
+    parseStatementList();
+    checkToken("bClose");
+    abstractSyntaxTree.backToParent();
+    
+    abstractSyntaxTree.backToParent();
+    
 }
 
 //-----------------------------------------------------------------------
@@ -225,6 +287,15 @@ function checkToken(expectedKind) {
             else {
                 errorCount++;
                 putMessage("ERROR: Not a digit.  Error at position " + tokenIndex + ".");
+            }
+            break;
+        case "boolVal": putMessage("Expecting a boolean");
+            if (currentToken.value === "true" || currentToken.value === "false") {
+                putMessage("Got a boolean!");
+            }
+            else {
+                errorCount++;
+                putMessage("ERROR: Not a boolean.  Error at position " + tokenIndex + ".");
             }
             break;
         case "op": putMessage("Expecting an operator");
@@ -290,8 +361,8 @@ function checkToken(expectedKind) {
                 }
             }
             break;
-        case "pOpen": putMessage("Expecting print expression");
-            if (currentToken.value === "print(") {
+        case "PrintStatement": putMessage("Expecting print expression");
+            if (currentToken.value === "print") {
                 putMessage("Got a print expression!");
             }
             else {
@@ -299,13 +370,40 @@ function checkToken(expectedKind) {
                 putMessage("ERROR: Not a print expression.  Error at position " + tokenIndex + ".");
             }
             break;
-        case "pClose": putMessage("Expecting close of print expression");
-            if (currentToken.value === ")") {
-                putMessage("Got a close of print expression!");
+        case "pOpen": putMessage("Expecting an open parentheses");
+            if (currentToken.value === "(") {
+                putMessage("Got an open parentheses!");
             }
             else {
                 errorCount++;
-                putMessage("ERROR: Not a close of print expression.  Error at position " + tokenIndex + ".");
+                putMessage("ERROR: Not an open parentheses.  Error at position " + tokenIndex + ".");
+            }
+            break;
+        case "pClose": putMessage("Expecting a close parentheses");
+            if (currentToken.value === ")") {
+                putMessage("Got a close parentheses!");
+            }
+            else {
+                errorCount++;
+                putMessage("ERROR: Not a close parentheses.  Error at position " + tokenIndex + ".");
+            }
+            break;
+        case "WhileStatement": putMessage("Expecting a while token");
+            if (currentToken.value === "while") {
+                putMessage("Got a while token!");
+            }
+            else {
+                errorCount++;
+                putMessage("ERROR: Not a while token.  Error at position " + tokenIndex + ".");
+            }
+            break;
+        case "IfStatement": putMessage("Expecting an if token");
+            if (currentToken.value === "if") {
+                putMessage("Got an if token!");
+            }
+            else {
+                errorCount++;
+                putMessage("ERROR: Not an if token.  Error at position " + tokenIndex + ".");
             }
             break;
         case "bOpen": putMessage("Expecting open bracket");

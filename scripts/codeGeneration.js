@@ -64,12 +64,12 @@ function traverseTree(node) {
         }
         
         if(curType === "string") {
-            for(var i=1; i<node.value.length-1; i++) { //Skip the quote marks
-                heap.push( node.value.charCodeAt(i).toString(16) );//put it in backwords, we will fix it later
-            }
-            heap.push("00");
             memory.push("A9", ((memorySize-1-heap.length) - (node.value.length+1)).toString(16), "8D",
                         tempName, "??");
+            for(var i=1; i<node.children[1].value.length-1; i++) { //Skip the quote marks
+                heap.push( node.children[1].value.charCodeAt(i).toString(16) );//put it in backwords, we will fix it later
+            }
+            heap.push("00");
         }
         //Load accumulator with data (skips strings)
         generateExpression(node.children[1], tempName);

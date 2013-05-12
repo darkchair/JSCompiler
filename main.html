@@ -11,34 +11,42 @@
         . . . <em>a simple parser for a simple grammar</em>:
     </p>  
     <pre>
-Program       ::== Statement $
-Statement     ::== print ( Expr )
-              ::== Id = Expr
-              ::== VarDecl
-              ::== { StatementList }
-StatementList ::== Statement StatementList
-              ::== ε
-Expr          ::== IntExpr
-              ::== StringExpr
-              ::== Id
-IntExpr       ::== digit op Expr
-              ::== digit
-StringExpr    ::== " CharList "
-CharList      ::== Char CharList
-              ::== Space CharList
-              ::== ε
-VarDecl       ::== Type Id
-Type          ::== int | string
-Id            ::== Char
-Char          ::== a | b | c ... z
-Space         ::== the space character
-digit         ::== 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0
-op            ::== + | -
+Program         ::== Statement $
+Statement       ::== print ( Expr )
+                ::== Id = Expr
+                ::== VarDecl
+                ::== { StatementList }
+                ::== WhileStatement
+                ::== IfStatement
+WhileStatement  ::== while BooleanExpr { StatementList }
+IfStatement     ::== if BooleanExpr { StatementList }
+StatementList   ::== Statement StatementList
+                ::== ε
+Expr            ::== IntExpr
+                ::== StringExpr
+                ::== BooleanExpr
+                ::== Id
+IntExpr         ::== digit op Expr
+                ::== digit
+StringExpr      ::== " CharList "
+BooleanExpr     ::== ( Expr == Expr )
+                ::== boolVal
+CharList        ::== Char CharList
+                ::== Space CharList
+                ::== ε
+VarDecl         ::== Type Id
+Id              ::== Char
+Type            ::== int | string | boolean
+Char            ::== a | b | c ... z
+Space           ::== the space character
+digit           ::== 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0
+boolVal         ::== false | true
+op              ::== + | -
     </pre>
     <span id="headers">
     </span>
     <span id="frontend">
-        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2+3 {string b b="a skdmn"}{int d} print(1+5+a)} $</textarea>
+        <textarea class="textbox" id="taSourceCode" cols="32" rows="18">{int a a=1+2+3 {string b b="a skdmn"} if(true==true){int d} print(1+5+a)} $</textarea>
         <textarea class="textbox" readonly id="taOutput" cols="32" rows="18"></textarea>
         <textarea class="textbox" readonly id="symbolTable" cols="32" rows="18"></textarea>
         <textarea class="textbox" readonly id="abstractSyntaxTree" cols="32" rows="18"></textarea>
@@ -69,6 +77,7 @@ op            ::== + | -
         //symbolTableTree.push(new SymbolTable());
     var scope = 0;//current scope within the code
     var abstractSyntaxTree = new AbstractSyntaxTree(new ASTNode(null, "root"));
+    var concreteSyntaxTree = new AbstractSyntaxTree(new ASTNode(null, "root"));
     
     var locationTracker = -1;//used to break recursion if invalid statement is found
 

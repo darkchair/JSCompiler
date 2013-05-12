@@ -61,51 +61,65 @@ function lex()
             //evaluateChar() will add trailing spaces, so ignore them
             //when analyzing the string by using substring()
             var returnedToken;
-            if(holdString.substring(0,5) === "print" && 
-                sourceCode.charAt(lexCounter) === "(")
+            if(holdString.substring(0,5) === "print")
             {
-                lexCounter++;
-                returnedToken = new Token("pOpen", "print(");
+                returnedToken = new Token("PrintStatement", "print");
+                tokenArray.push(returnedToken);
+                continue;
+            }
+            else if(holdString.substring(0,5) === "while") {
+                returnedToken = new Token("WhileStatement", "while");
+                tokenArray.push(returnedToken);
+                continue;
+            }
+            else if(holdString.substring(0,2) === "if") {
+                returnedToken = new Token("IfStatement", "if");
+                tokenArray.push(returnedToken);
+                continue;
+            }
+            else if(holdString.substring(0,3) === "int")
+            {
+                returnedToken = new Token("type", holdString.substring(0,3));
+                tokenArray.push(returnedToken);
+                continue;
+            }
+            else if(holdString.substring(0,6) === "string")
+            {
+                returnedToken = new Token("type", holdString.substring(0,6));
+                tokenArray.push(returnedToken);
+                continue;
+            }
+            else if(holdString.substring(0,4) === "true")
+            {
+                returnedToken = new Token("boolVal", holdString.substring(0,4));
+                tokenArray.push(returnedToken);
+                continue;
+            }
+            else if(holdString.substring(0,5) === "false")
+            {
+                returnedToken = new Token("boolVal", holdString.substring(0,5));
                 tokenArray.push(returnedToken);
                 continue;
             }
             else
             {
-                if(holdString.substring(0,3) === "int")
+                for(var j=0; j<holdString.length; j++)
                 {
-                    returnedToken = new Token("type", holdString.substring(0,3));
-                    tokenArray.push(returnedToken);
-                    continue;
-                }
-                else if(holdString.substring(0,6) === "string")
-                {
-                    returnedToken = new Token("type", holdString.substring(0,6));
-                    tokenArray.push(returnedToken);
-                    continue;
-                }
-                else
-                {
-                    for(var j=0; j<holdString.length; j++)
-                    {
-                        if(holdString.charAt(j).charCodeAt(0) >= 65 &&
-                            holdString.charAt(j).charCodeAt(0) <= 90)
-                        {//No upper case allowed
-                            errorCount++;
-                            var count = lexCounter-1;
-                            putMessage("Characters must be lower-case at position " + count);
-                            throw new LexError("Characters must be lower-case at position " + count);
-                        }
-                        else if(holdString.charAt(j) !== " ")
-                        {
-                            tokenArray.push(new Token("char", holdString.charAt(j)));
-                        }
+                    if(holdString.charAt(j).charCodeAt(0) >= 65 &&
+                        holdString.charAt(j).charCodeAt(0) <= 90)
+                    {//No upper case allowed
+                        errorCount++;
+                        var count = lexCounter-1;
+                        putMessage("Characters must be lower-case at position " + count);
+                        throw new LexError("Characters must be lower-case at position " + count);
                     }
-                    continue;
+                    else if(holdString.charAt(j) !== " ")
+                    {
+                        tokenArray.push(new Token("char", holdString.charAt(j)));
+                    }
                 }
-                    //errorCount++;
-                    //putMessage("Id's cannot be longer than one character");
+                continue;
             }
-
         }
         if(isOp(sourceCode.charAt(lexCounter)))
         {
@@ -116,6 +130,12 @@ function lex()
         if(sourceCode.charAt(lexCounter) === "=")
         {
             tokenArray.push(new Token("equal", sourceCode.charAt(lexCounter)));
+            lexCounter++;
+            continue;
+        }
+        if(sourceCode.charAt(lexCounter) === "(")
+        {
+            tokenArray.push(new Token("pOpen", sourceCode.charAt(lexCounter)));
             lexCounter++;
             continue;
         }
