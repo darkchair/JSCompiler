@@ -29,6 +29,7 @@ function AbstractSyntaxTree(root) {
         
         
         if(expr.charAt(0) === "\"") { //If its a string expression
+            //expr = expr.substring(1,expr.length-1);
             this.addChild(expr, location);
             this.backToParent();
         }
@@ -37,7 +38,7 @@ function AbstractSyntaxTree(root) {
         else if(expr.charAt(0) === "(") { //If its a boolean expression
             
         }
-        else {//If its an id 
+        else {//If its an id or a digit
             this.addChild(expr, location);
             this.backToParent();
         }
@@ -137,7 +138,7 @@ function ASTNode (parent, value, position) {
     //Members
     this.parent = parent;
     this.value = value;
-    this.scope = null;
+    this.scopeId = null;
     this.children = new Array();   
     this.position = position; //position in the sequence of tokens
     

@@ -55,6 +55,9 @@ op              ::== + | -
     <div>
     <input type="button" id="btnCompile" value="Compile" onclick="btnCompile_click();"/>
     </div>
+    <div>
+    <input type="button" id="btnChangeOutput" value="Change" onclick="btnChangeOutput_click();"/>
+    </div>
     <!-- Client-side code down here, per the YSlow advice. 
     // (http://developer.yahoo.com/performance/rules.html#js_bottom) -->
     <script type="text/javascript" src="scripts/utils.js"></script>
@@ -70,6 +73,7 @@ op              ::== + | -
     var tokenIndex = 0;
     var currentToken = new Token();
     var warningCount = 0;
+    var noWarnings = true;
     var errorCount = 0;
     var EOF = "$";
     
@@ -112,11 +116,30 @@ op              ::== + | -
             if(errorCount === 0) {
                 generateCode();
             }
+            putMessage("\n-------------------");
+            putMessage("Compiliation Complete!");
+            putMessage(memory.length);
+            if(noWarnings){
+                //Make the input box outline yellow
+            }
+            else {
+                //Make the input box outline gree
+            }
         }
         else
         {
             putMessage("Lexing found " + errorCount + " error(s).");
         }
+    }
+    
+    function btnChangeOutput_click() {
+        
+        if(memoryOutputType === "plain")
+            memoryOutputType = "indexed";
+        else if(memoryOutputType === "indexed")
+            memoryOutputType = "plain";
+        printMemory();
+        
     }
     
     function putMessage(msg)

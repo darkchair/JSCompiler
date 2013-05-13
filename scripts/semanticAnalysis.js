@@ -60,7 +60,7 @@ function recordAndCheckNode(node) {
             throw new SemanticError("Error: Redeclaration at position " + node.children[0].position);
         }
         symbolTableTree.activeNode.pushSymbol(type, id, node.children[0].position);
-        node.scope = symbolTableTree.activeNode;
+        node.children[1].scopeId = symbolTableTree.activeNode.scopeId;
         putMessage("In scope " + symbolTableTree.activeNode.scopeId + ", \'" +
                 id + "\' declared as a(n) " + type);
     }
@@ -69,7 +69,7 @@ function recordAndCheckNode(node) {
         var checkType = idType(node.children[0].value); //type of identifier
         var type = evaluateExpression(node.children[1]); //type of expression being assigned
         if(checkType === type) {
-            node.scope = idScope(node.children[0].value);
+            node.children[0].scopeId = idScope(node.children[0].value).scopeId;//already done in 'type's declaration
         }
         else if(checkType !== "null"){
             putMessage("ERROR: Type mismatch at position " + node.children[0].position);
@@ -94,7 +94,7 @@ function recordAndCheckNode(node) {
             
             var checkType = idType(node.children[0].value);
             if(checkType !== "null") {
-                node.scope = idScope(node.children[0].value);
+                node.children[0].scopeId = idScope(node.children[0].value).scopeId;//doesn't do job
                 markVariableAsUsed(node.children[0].value);
             }
             else {
@@ -207,7 +207,9 @@ function recordAndCheckNode(node) {
 }
 
 function evaluateExpression(node) {
-    //This isn't robust enough, I think
+    //Return what type the expression is, and record
+    //scopeId's for every id in the expression
+    //NEEDS TO IMPLEMENT TYPE CHECKING FROM WITHIN EXPRESSIONS
     if(evaluateInt(node))
         return "int";
     else if(evaluateString(node))
@@ -221,16 +223,34 @@ function evaluateExpression(node) {
 
 function evaluateInt(node) {
     
-    if(node.value === "+" || node.value === "-" ||
-        (node.value.charCodeAt(0) >= 48  && node.value.charCodeAt(0) <= 57) ) {
-       return true;
+    if(node.value === "+" || node.value === "-") {
+        while(node.children[1] === "+" || node.children[1] === "-") {
+            if(isID(node.children[0])) {
+                node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+            }
+            node = node.children[1];
+        }
+        if(isID(node.children[0])) {
+            node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+        }
+        if(isID(node.children[1])) {
+            node.children[1].scopeId = idScope(node.children[1].value).scopeId;
+        }
+        return true;
+    }
+    else if(node.value.charCodeAt(0) >= 48  && node.value.charCodeAt(0) <= 57) {
+        return true;
     }
     else if (node.value.charCodeAt(0) >= 97 &&
                 node.value.charCodeAt(0) <= 122) {
-            if(idType(node.value.charAt(0)) !== "int")
+            if(idType(node.value.charAt(0)) !== "int") {
+                node.scopeId = idScope(node.value).scopeId;
                 return false;
-            else
+            }
+            else {
+                node.scopeId = idScope(node.value).scopeId;
                 return true;
+            }
     }
     else
         return false;
@@ -260,9 +280,19 @@ function evaluateInt(node) {
 
 function evaluateString(node) {
     
-    //Does this need a better evaluation?
     if(node.value.charAt(0) === "\"") {
         return true;
+    }
+    else if (node.value.charCodeAt(0) >= 97 &&
+                node.value.charCodeAt(0) <= 122) {
+            if(idType(node.value.charAt(0)) !== "string") {
+                node.scopeId = idScope(node.value).scopeId;
+                return false;
+            }
+            else {
+                node.scopeId = idScope(node.value).scopeId;
+                return true;
+            }
     }
     
 }
@@ -271,6 +301,21 @@ function evaluateBoolean(node) {
     
     if(node.value === "true" || node.value === "false")
         return true;
+    else if (node.value === "Equals?") {
+        while(node.children[1].value === "Equals?") {
+            if(isID(node.children[0])) {
+                node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+            }
+            node = node.children[1];
+        }
+        if(isID(node.children[0])) {
+            node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+        }
+        if(isID(node.children[1])) {
+            node.children[1].scopeId = idScope(node.children[1].value).scopeId;
+        }
+        return true;
+    }
     
 }
 
@@ -316,7 +361,6 @@ function idScope(id) {
         //For every entry in the scope's table,
         //If the id was declared here then return the scope's node
             if(symbolTableTree.activeNode.table[i].id === id) {
-                symbolTableTree.activeNode.table[i].assigned = true;
                 var returnNode = symbolTableTree.activeNode;
                 symbolTableTree.activeNode = nodeLocation;
                 return returnNode;
