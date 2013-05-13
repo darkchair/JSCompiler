@@ -38,7 +38,7 @@ function generateCode() {
     
     while(memory.length < memorySize-heap.length)
         memory.push("00");
-    for(var i=0; i<heap.length; i++)
+    for(var i=heap.length-1; i>=0; i--)
         memory.push(heap[i]);
     memory.push("00");
     printMemory();
@@ -79,10 +79,10 @@ function traverseTree(node) {
         if(curType === "string") {
             memory.push("A9", ((memorySize-1-heap.length) - (node.children[1].value.length-2)).toString(16), "8D",
                         tempName, "??"); //-2 because of quote marks
-            for(var i=1; i<node.children[1].value.length-1; i++) { //Skip the quote marks
+            heap.push("00");
+            for(var i=node.children[1].value.length-1-1; i>=1; i--) { //Skip the quote marks
                 heap.push( node.children[1].value.charCodeAt(i).toString(16) );//put it in backwords, we will fix it later
             }
-            heap.push("00");
         }
         //Load accumulator with data (skips strings)
         loadAccumulator(node.children[1], tempName);
