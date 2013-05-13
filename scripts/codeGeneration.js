@@ -10,7 +10,8 @@ var declarationTable = new Array();
 var jumpTable = new Array();
 var stringTable = new Array();
 
-var codeGenScopeTracker = 0;
+var codeGenScopeTracker = -2;
+var firstScopeNode = true;
 var memorySize = 255;//One extra space at very end for holding values temporarily
                     //(for holding values so they can be negated for subtraction
                     //and for comparing two variables)
@@ -48,11 +49,29 @@ function generateCode() {
 function traverseTree(node) {
     
     if(node.value === "StatementBlock") {
-        codeGenScopeTracker++;
-        for(var i=0; i<node.children.length; i++) {
-            traverseTree(node.children[i]);
+        
+        //codeGenScopeTracker++;
+        //if(codeGenScopeTracker >= 0)
+        //    symbolTableTree.activeNode = symbolTableTree.children[codeGenScopeTracker];
+        var i=0
+        
+        if(!firstScopeNode) {
+            symbolTableTree.activeNode = symbolTableTree.activeNode.children[i];
         }
-        codeGenScopeTracker--;
+        for(; i<node.children.length; i++) {
+            if(firstScopeNode) {
+                firstScopeNode = false;
+                traverseTree(node.children[i]);
+                firstScopeNode = true;
+            }
+            else {
+                traverseTree(node.children[i]);
+            }
+        }
+        //symbolTableTree.activeNode = symbolTableTree.activeNode.parent;
+        if(symbolTableTree.activeNode.parent !== null)
+            symbolTableTree.activeNode = symbolTableTree.activeNode.parent;
+        //firstScopeNode = true;
     }
     
     else if(node.value === "Declaration") {
@@ -77,6 +96,9 @@ function traverseTree(node) {
         }*/
         
         if(curType === "string") {
+            if(node.children[1].value === "+") {
+                
+            }
             memory.push("A9", ((memorySize-1-heap.length) - (node.children[1].value.length-2)).toString(16), "8D",
                         tempName, "??"); //-2 because of quote marks
             heap.push("00");
@@ -106,10 +128,10 @@ function traverseTree(node) {
         }
         else {
             
-            if(node.children[0] === "+" || node.children[0] === "-") {
+            if(node.children[0].value === "+" || node.children[0].value === "-") {
                 //Load accumulator with data (skips strings)
-                loadAccumulator(node.children[1], tempName);
-                memory.push("8D", "FF", "00", "AC", "FF", "00", "A2", "01", "FF");
+                loadAccumulator(node.children[0]);
+                memory.push("8D", "ff", "00", "AC", "ff", "00", "A2", "01", "FF");
             }
             else if(node.children[0].value.charAt(0) === "\"") {
                 //Not sure
@@ -130,11 +152,9 @@ function traverseTree(node) {
         }
         
         var startLocation = memory.length;
+        var firstJump = jumpTable.length;
         //Set Z flag to true
-        memory.push("A9", "");
-        //Load memory for block
-        traverseTree(node.children[1]);
-        
+        memory.push("A9", "00", "8D", "ff", "00", "A2", "00", "EC", "ff", "00");
         //Load first expression's value and store it in temp memory
         loadAccumulator(node.children[0]);
         memory.push("8D", "ff", "00");
@@ -158,6 +178,24 @@ function traverseTree(node) {
             
             node = node.parent;
         }
+        
+        //Load memory for block
+        traverseTree(node.children[1]);
+        
+        //Set Z flag to false
+        memory.push("A9", "01", "8D", "ff", "00", "A2", "00", "EC", "ff", "00");
+        //Jump to beginning
+        memory.push("D0", (256-(memory.length-startLocation)-2).toString(16));
+        //Update jumps
+        for(var j=firstJump; j<jumpTable.length; j++) {
+            for(var i=0; i<memory.length; i++) {
+                if(memory[i] === "J" + j) {
+                    memory[i] = (memory.length - i - 1).toString(16);
+                }
+            }
+        }
+        
+        
 
         /*//Going back up the tree, build the jump statements
         while(node.value !== "IfStatement") {
@@ -268,15 +306,16 @@ function loadAccumulator(node) {
     //Inserts code into memory for loading the values as described by the expression into the accumulator
     
     if(node.children.length === 0) {
-        if(isID(node.value)) {
-            memory.push("AD", getTempNameOfId(node.value, node.scopeId), "??");
-        }
-        else if(node.value === "true") {
+        if(node.value === "true") {
             memory.push("A9", "01");
         }
         else if(node.value === "false") {
             memory.push("A9", "00");
         }
+        else if(isID(node.value)) {
+            memory.push("AD", getTempNameOfId(node.value, node.scopeId), "??");
+        }
+        
         else if(node.value.charCodeAt(0) >= 48  && node.value.charCodeAt(0) <= 57) {
             memory.push("A9", parseInt(node.value).toString(16));
         }
@@ -301,30 +340,30 @@ function loadAccumulator(node) {
         
         var partValue = 0;
         var insertLocation = memory.length;
-        if(isID(buildString.charAt(buildString.length-1))) {
-            memory.push("AD", getTempNameOfId(buildString.charAt(buildString.length-1), buildString.charAt(buildString.length-1).scopeId), "??");
+        if(isID(buildString.charAt(0))) {
+            memory.push("6D", getTempNameOfId(buildString.charAt(0), idScope(buildString.charAt(0)).scopeId), "??");
         }
         else {
-            partValue += parseInt(buildString.charAt(buildString.length-1));
+            partValue += parseInt(buildString.charAt(0));
         }
-        for(var i=buildString.length-2; i>=0; i--) {
+        for(var i=buildString.length-1; i>=1; i--) {
             if((buildString.charCodeAt(i) >= 48  && buildString.charCodeAt(i) <= 57))
                 continue;
             else if(buildString.charAt(i) === "+") {
-                if(isID(buildString.charAt(i-1))) {
-                    memory.push("6D", getTempNameOfId(buildString.charAt(i-1), buildString.charAt(buildString.length-1).scopeId), "??");
+                /*if(isID(buildString.charAt(i-1))) {
+                    memory.push("6D", getTempNameOfId(buildString.charAt(i+1), buildString.charAt(buildString.length+1).scopeId), "??");
                 }
-                else {
-                    partValue += parseInt(buildString.charAt(i-1));
-                }
+                else {*/
+                    partValue += parseInt(buildString.charAt(i+1));
+                //}
             }
             else if(buildString.charAt(i) === "-") {
                 if(isID(buildString.charAt(i-1))) {
-                    memory.push("6D", getTempNameOfId(buildString.charAt(i-1), buildString.charAt(buildString.length-1).scopeId), "??");
+                    memory.push("6D", getTempNameOfId(buildString.charAt(i+1), buildString.charAt(buildString.length+1).scopeId), "??");
                     //memory.push
                 }
                 else {
-                    partValue -= parseInt(buildString.charAt(i-1));
+                    partValue -= parseInt(buildString.charAt(i+1));
                 }
             }
             else {
@@ -395,14 +434,14 @@ function loadXReg(node) {
     //Inserts code into memory for loading the values as described by the expression into the X register
     
     if(node.children.length === 0) {
-        if(isID(node.value)) {
-            memory.push("AE", getTempNameOfId(node.value, node.scopeId), "??");
-        }
-        else if(node.value === "true") {
+        if(node.value === "true") {
             memory.push("A2", "01");
         }
         else if(node.value === "false") {
             memory.push("A2", "00");
+        }
+        else if(isID(node.value)) {
+            memory.push("AE", getTempNameOfId(node.value, node.scopeId), "??");
         }
         else if(node.value.charCodeAt(0) >= 48  && node.value.charCodeAt(0) <= 57) {
             memory.push("A2", parseInt(node.value).toString(16));
@@ -428,8 +467,8 @@ function loadXReg(node) {
         
         var partValue = 0;
         var insertLocation = memory.length;
-        if(isID(buildString.charAt(buildString.length-1))) {
-            memory.push("AE", getTempNameOfId(buildString.charAt(buildString.length-1), buildString.charAt(buildString.length-1).scopeId), "??");
+        if(isID(buildString.charAt(0))) {
+            memory.push("AE", getTempNameOfId(buildString.charAt(0), symbolTableTree.activeNode.scopeId), "??");
         }
         else {
             partValue += parseInt(buildString.charAt(buildString.length-1));

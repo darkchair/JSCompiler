@@ -116,9 +116,14 @@ op              ::== + | -
             if(errorCount === 0) {
                 generateCode();
             }
-            putMessage("\n-------------------");
-            putMessage("Compiliation Complete!");
-            putMessage(memory.length);
+            if(errorCount === 0) {
+                putMessage("\n-------------------");
+                putMessage("Compiliation Complete!");
+            }
+            else {
+                putMessage("\n-------------------");
+                putMessage("ERRORs found");
+            }
             if(noWarnings){
                 //Make the input box outline yellow
             }

@@ -247,7 +247,10 @@ function isChar(ch)
 
 function isID(ch)
 {
-    if((ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) <= 122))
+    if(ch.length > 1) {
+        return false;
+    }
+    else if((ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) <= 122))
     {
         return true;
     }

@@ -88,6 +88,7 @@ function recordAndCheckNode(node) {
     
     else if(node.value === "PrintExpression") {
         
+        evaluateExpression(node.children[0]);
         if( node.children[0].value.length === 1 &&
             (node.children[0].value.charCodeAt(0) >= 97 &&
                 node.children[0].value.charCodeAt(0) <= 122) ) {
@@ -209,7 +210,7 @@ function recordAndCheckNode(node) {
 function evaluateExpression(node) {
     //Return what type the expression is, and record
     //scopeId's for every id in the expression
-    //NEEDS TO IMPLEMENT TYPE CHECKING FROM WITHIN EXPRESSIONS
+    //Also checks variables within expressions
     if(evaluateInt(node))
         return "int";
     else if(evaluateString(node))
@@ -224,17 +225,38 @@ function evaluateExpression(node) {
 function evaluateInt(node) {
     
     if(node.value === "+" || node.value === "-") {
-        while(node.children[1] === "+" || node.children[1] === "-") {
-            if(isID(node.children[0])) {
+        while(node.children[1].value === "+" || node.children[1].value === "-") {
+            if(isID(node.children[0].value)) {
                 node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+                checkForUndefined(node.children[0]);
+                if(idType(node.children[0].value) !== "int") {
+                    return false;
+                }
+            }
+            else if(node.children[0].value.charAt(0) === "\"" || node.children[1].value.charAt(0) === "\"") {
+                return false;
             }
             node = node.children[1];
         }
-        if(isID(node.children[0])) {
+        if(isID(node.children[0].value)) {
             node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+            checkForUndefined(node.children[0]);
+            if(idType(node.children[0].value) !== "int") {
+                return false;
+            }
         }
-        if(isID(node.children[1])) {
+        else if(node.children[0].value.charAt(0) === "\"") {
+            return false;
+        }
+        if(isID(node.children[1].value)) {
             node.children[1].scopeId = idScope(node.children[1].value).scopeId;
+            checkForUndefined(node.children[1]);
+            if(idType(node.children[1].value) !== "int") {
+                return false;
+            }
+        }
+        else if(node.children[1].value.charAt(0) === "\"") {
+            return false;
         }
         return true;
     }
@@ -242,13 +264,15 @@ function evaluateInt(node) {
         return true;
     }
     else if (node.value.charCodeAt(0) >= 97 &&
-                node.value.charCodeAt(0) <= 122) {
-            if(idType(node.value.charAt(0)) !== "int") {
+                node.value.charCodeAt(0) <= 122 && node.value.length === 1) {
+            if(idType(node.value) !== "int") {
                 node.scopeId = idScope(node.value).scopeId;
+                checkForUndefined(node);
                 return false;
             }
             else {
                 node.scopeId = idScope(node.value).scopeId;
+                checkForUndefined(node);
                 return true;
             }
     }
@@ -284,15 +308,53 @@ function evaluateString(node) {
         return true;
     }
     else if (node.value.charCodeAt(0) >= 97 &&
-                node.value.charCodeAt(0) <= 122) {
-            if(idType(node.value.charAt(0)) !== "string") {
+                node.value.charCodeAt(0) <= 122 && node.value.length === 1) {
+            if(idType(node.value) !== "string") {
                 node.scopeId = idScope(node.value).scopeId;
+                checkForUndefined(node);
                 return false;
             }
             else {
                 node.scopeId = idScope(node.value).scopeId;
+                checkForUndefined(node);
                 return true;
             }
+    }
+    if(node.value === "+" || node.value === "-") {
+        while(node.children[1].value === "+" || node.children[1].value === "-") {
+            if(isID(node.children[0].value)) {
+                node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+                checkForUndefined(node.children[0]);
+                if(idType(node.children[0].value) !== "string") {
+                    return false;
+                }
+            }
+            else if(node.children[0].value.charAt(0) === "\"" || node.children[1].value.charAt(0) === "\"") {
+                return true;
+            }
+            node = node.children[1];
+        }
+        if(isID(node.children[0].value)) {
+            node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+            checkForUndefined(node.children[0]);
+            if(idType(node.children[0].value) !== "string") {
+                return false;
+            }
+        }
+        else if(node.children[0].value.charAt(0) === "\"") {
+            return true;
+        }
+        if(isID(node.children[1].value)) {
+            node.children[1].scopeId = idScope(node.children[1].value).scopeId;
+            checkForUndefined(node.children[1]);
+            if(idType(node.children[1].value) !== "string") {
+                return false;
+            }
+        }
+        else if(node.children[1].value.charAt(0) === "\"") {
+            return true;
+        }
+        return true;
     }
     
 }
@@ -303,16 +365,28 @@ function evaluateBoolean(node) {
         return true;
     else if (node.value === "Equals?") {
         while(node.children[1].value === "Equals?") {
-            if(isID(node.children[0])) {
+            if(node.children[0].value !== "true" && node.children[0].value !== "false" && isID(node.children[0].value)) {
                 node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+                checkForUndefined(node.children[0]);
+                if(idType(node.children[0].value) !== "boolVal") {
+                    return false;
+                }
             }
             node = node.children[1];
         }
-        if(isID(node.children[0])) {
+        if(node.children[0].value !== "true" && node.children[0].value !== "false" && isID(node.children[0].value)) {
             node.children[0].scopeId = idScope(node.children[0].value).scopeId;
+            checkForUndefined(node.children[0]);
+            if(idType(node.children[0].value) !== "boolVal") {
+                return false;
+            }
         }
-        if(isID(node.children[1])) {
+        if(node.children[1].value !== "true" && node.children[1].value !== "false" && isID(node.children[1].value)) {
             node.children[1].scopeId = idScope(node.children[1].value).scopeId;
+            checkForUndefined(node.children[1]);
+            if(idType(node.children[1].value) !== "boolVal") {
+                return false;
+            }
         }
         return true;
     }
@@ -451,6 +525,17 @@ function isDuplicateDeclaration(id) {
 
     }
     return false;
+}
+
+function checkForUndefined(node) {
+    if(node.scopeId == null) {
+        putMessage("ERROR: Undeclared variable at position " +
+                node.position);
+        throw new SemanticError("Error: Undeclared variable at position " +
+                node.position);
+    }
+    else
+        return true;
 }
 
 
